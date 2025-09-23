@@ -1,8 +1,7 @@
-import { QueryClient, QueryClientProvider } from 'node_modules/@tanstack/react-query/build/legacy';
 import './App.css'
 import AppRoutes from './AppRoutes'
 import { Toaster } from 'sonner';
-
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 function App() {
 
    const queryClient = new QueryClient();
