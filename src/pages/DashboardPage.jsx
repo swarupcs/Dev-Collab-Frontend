@@ -285,8 +285,8 @@ export default function DashboardPage() {
                     className='relative h-8 w-8 rounded-full'
                   >
                     <Avatar className='h-8 w-8'>
-                      <AvatarImage src='/user-profile-illustration.png' />
-                      <AvatarFallback>JD</AvatarFallback>
+                      <AvatarImage src={photoUrl} />
+                      <AvatarFallback>{firstName[0]+lastName[0]}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
