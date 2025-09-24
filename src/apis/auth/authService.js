@@ -10,7 +10,7 @@ export const authService = {
       return response.data;
     } catch (error) {
       // Enhanced error handling
-      handleApiError(error, 'Signup failed');
+      throw handleApiError(error, 'Signup failed');
     }
   },
 
@@ -19,7 +19,7 @@ export const authService = {
       const response = await axiosInstance.post('/auth/signin', userData);
       return response.data; // Expecting { user: {...}, token: '...' }
     } catch (error) {
-      handleApiError(error, 'Signin failed');
+      throw handleApiError(error, 'Signin failed');
     }
   },
 };
