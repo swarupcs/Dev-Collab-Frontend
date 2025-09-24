@@ -81,7 +81,8 @@ export default function SignInPage() {
       onSuccess: (data) => {
         // Handle successful signin
         // console.log('Signin successful:', data);
-        setUserProfile(data?.userProfile); // Assuming the API returns user profile data
+        // console.log("data",data)
+        setUserProfile(data?.data?.user); // Assuming the API returns user profile data
 
         // Redirect to dashboard or desired page
         navigate('/dashboard'); // Adjust route as needed

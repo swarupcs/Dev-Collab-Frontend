@@ -99,7 +99,7 @@ export default function SignUpPage() {
         // Handle successful signup
         console.log('Signup successful:', data);
 
-        setUserProfile(data?.user); // Assuming the API returns user profile data
+        setUserProfile(data?.data?.user); // Assuming the API returns user profile data
 
         // Redirect to dashboard or desired page
         navigate('/dashboard'); // Adjust route as needed
