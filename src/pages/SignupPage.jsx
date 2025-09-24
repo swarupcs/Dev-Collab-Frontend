@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Github, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSignup } from '@/hooks/useAuth/useSignup';
+import { useAppStore } from '@/store';
  // Adjust import path as needed
 
 export default function SignUpPage() {
@@ -27,6 +28,9 @@ export default function SignUpPage() {
   const [formErrors, setFormErrors] = useState({});
 
   const { mutate: signup, isPending, error } = useSignup();
+
+  const setUserProfile = useAppStore((state) => state.setUserProfile);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -94,6 +98,8 @@ export default function SignUpPage() {
       onSuccess: (data) => {
         // Handle successful signup
         console.log('Signup successful:', data);
+
+        setUserProfile(data?.user); // Assuming the API returns user profile data
 
         // Redirect to dashboard or desired page
         navigate('/dashboard'); // Adjust route as needed
