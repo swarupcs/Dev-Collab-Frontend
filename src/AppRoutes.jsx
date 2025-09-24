@@ -3,7 +3,8 @@ import { Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import SignUpPage from './pages/SignupPage';
 import SignInPage from './pages/SigninPage';
-import { DashboardPage } from './pages/DashboardPage';
+import DashboardPage from './pages/DashboardPage';
+
 
 function AppRoutes() {
   return (
