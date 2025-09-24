@@ -51,11 +51,31 @@ import {
 } from 'lucide-react';
 import { ConnectionsManager } from '@/components/Connection/ConnectionManager';
 import { ChatSystem } from '@/components/Chat/ChatSystem';
+import { useNavigate } from 'react-router-dom';
+import { useGetProfile } from '@/hooks/profile/useGetProfile';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [activityFilter, setActivityFilter] = useState('all');
   const [activitySearch, setActivitySearch] = useState('');
+
+   const navigate = useNavigate();
+
+  const {
+    data: profileData,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    refetch,
+  } = useGetProfile();
+
+  console.log("profileData", profileData);
+  console.log("isLoading", isLoading);
+  console.log("isError", isError);
+  console.log("error", error);
+  console.log("isFetching", isFetching);
+  console.log("refetch", refetch);
 
   const userStats = {
     connections: 24,
@@ -223,6 +243,11 @@ export default function DashboardPage() {
     }
   };
 
+  const handleProfileClick = () => {
+
+    navigate('/profile');
+  }
+
   return (
     <div className='min-h-screen bg-background'>
       {/* Header */}
@@ -268,7 +293,7 @@ export default function DashboardPage() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleProfileClick}>
                     <User className='mr-2 h-4 w-4' />
                     <span>View Profile</span>
                   </DropdownMenuItem>
