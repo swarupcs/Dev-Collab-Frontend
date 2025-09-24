@@ -53,6 +53,7 @@ import { ConnectionsManager } from '@/components/Connection/ConnectionManager';
 import { ChatSystem } from '@/components/Chat/ChatSystem';
 import { useNavigate } from 'react-router-dom';
 import { useGetProfile } from '@/hooks/profile/useGetProfile';
+import { useAppStore } from '@/store';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -70,12 +71,20 @@ export default function DashboardPage() {
     refetch,
   } = useGetProfile();
 
-  console.log("profileData", profileData);
-  console.log("isLoading", isLoading);
-  console.log("isError", isError);
-  console.log("error", error);
-  console.log("isFetching", isFetching);
-  console.log("refetch", refetch);
+  // console.log("profileData", profileData);
+  // console.log("isLoading", isLoading);
+  // console.log("isError", isError);
+  // console.log("error", error);
+  // console.log("isFetching", isFetching);
+  // console.log("refetch", refetch);
+
+  const userProfileData = useAppStore((state) => state.userProfile);
+  console.log("userProfileData", userProfileData);
+
+  const { firstName, lastName, _id, emailId, photoUrl, skills, about } =
+    userProfileData || {};
+
+  const fullName = `${firstName || ''} ${lastName || ''}`.trim();
 
   const userStats = {
     connections: 24,
@@ -285,10 +294,10 @@ export default function DashboardPage() {
                   <DropdownMenuLabel className='font-normal'>
                     <div className='flex flex-col space-y-1'>
                       <p className='text-sm font-medium leading-none'>
-                        John Doe
+                        {fullName}
                       </p>
                       <p className='text-xs leading-none text-muted-foreground'>
-                        john.doe@example.com
+                        {emailId}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -348,7 +357,7 @@ export default function DashboardPage() {
           <TabsContent value='overview' className='space-y-6'>
             <Card>
               <CardHeader>
-                <CardTitle className='text-2xl'>Welcome back, John!</CardTitle>
+                <CardTitle className='text-2xl'>Welcome back, {firstName}</CardTitle>
                 <CardDescription>
                   Here's what's happening in your developer network today.
                 </CardDescription>
