@@ -13,7 +13,9 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Github, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSignin } from '@/hooks/useAuth/useSignup';
+import { useSignin } from '@/hooks/useAuth/useSignin';
+import { useAppStore } from '@/store';
+
 ; // Adjust import path as needed
 
 export default function SignInPage() {
@@ -25,6 +27,9 @@ export default function SignInPage() {
   const [formErrors, setFormErrors] = useState({});
 
   const { mutate: signin, isPending, error } = useSignin();
+
+  const setUserProfile = useAppStore((state)=> state.setUserProfile);
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -75,7 +80,9 @@ export default function SignInPage() {
     signin(signinPayload, {
       onSuccess: (data) => {
         // Handle successful signin
-        console.log('Signin successful:', data);
+        // console.log('Signin successful:', data);
+        // console.log("data",data)
+        setUserProfile(data?.data?.user); // Assuming the API returns user profile data
 
         // Redirect to dashboard or desired page
         navigate('/dashboard'); // Adjust route as needed

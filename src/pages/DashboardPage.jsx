@@ -51,11 +51,40 @@ import {
 } from 'lucide-react';
 import { ConnectionsManager } from '@/components/Connection/ConnectionManager';
 import { ChatSystem } from '@/components/Chat/ChatSystem';
+import { useNavigate } from 'react-router-dom';
+import { useGetProfile } from '@/hooks/profile/useGetProfile';
+import { useAppStore } from '@/store';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [activityFilter, setActivityFilter] = useState('all');
   const [activitySearch, setActivitySearch] = useState('');
+
+   const navigate = useNavigate();
+
+  const {
+    data: profileData,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    refetch,
+  } = useGetProfile();
+
+  // console.log("profileData", profileData);
+  // console.log("isLoading", isLoading);
+  // console.log("isError", isError);
+  // console.log("error", error);
+  // console.log("isFetching", isFetching);
+  // console.log("refetch", refetch);
+
+  const userProfileData = useAppStore((state) => state.userProfile);
+  console.log("userProfileData", userProfileData);
+
+  const { firstName, lastName, _id, emailId, photoUrl, skills, about } =
+    userProfileData || {};
+
+  const fullName = `${firstName || ''} ${lastName || ''}`.trim();
 
   const userStats = {
     connections: 24,
@@ -223,6 +252,11 @@ export default function DashboardPage() {
     }
   };
 
+  const handleProfileClick = () => {
+
+    navigate('/profile');
+  }
+
   return (
     <div className='min-h-screen bg-background'>
       {/* Header */}
@@ -251,8 +285,8 @@ export default function DashboardPage() {
                     className='relative h-8 w-8 rounded-full'
                   >
                     <Avatar className='h-8 w-8'>
-                      <AvatarImage src='/user-profile-illustration.png' />
-                      <AvatarFallback>JD</AvatarFallback>
+                      <AvatarImage src={photoUrl} />
+                      <AvatarFallback>{firstName[0]+lastName[0]}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -260,15 +294,15 @@ export default function DashboardPage() {
                   <DropdownMenuLabel className='font-normal'>
                     <div className='flex flex-col space-y-1'>
                       <p className='text-sm font-medium leading-none'>
-                        John Doe
+                        {fullName}
                       </p>
                       <p className='text-xs leading-none text-muted-foreground'>
-                        john.doe@example.com
+                        {emailId}
                       </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleProfileClick}>
                     <User className='mr-2 h-4 w-4' />
                     <span>View Profile</span>
                   </DropdownMenuItem>
@@ -323,7 +357,7 @@ export default function DashboardPage() {
           <TabsContent value='overview' className='space-y-6'>
             <Card>
               <CardHeader>
-                <CardTitle className='text-2xl'>Welcome back, John!</CardTitle>
+                <CardTitle className='text-2xl'>Welcome back, {firstName}</CardTitle>
                 <CardDescription>
                   Here's what's happening in your developer network today.
                 </CardDescription>
