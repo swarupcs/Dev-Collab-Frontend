@@ -23,6 +23,17 @@ export const connectionService = {
       throw handleApiError(error, 'Failed to fetch suggested requests');
     }
   },
+
+  reviewConnectionRequest: async (status, requestId) => {
+    try {
+      const response = await axiosInstance.post(
+        `/requests/reviewRequest/${status}/${requestId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'Failed to review connection request');
+    }
+  }
 };
 
 
