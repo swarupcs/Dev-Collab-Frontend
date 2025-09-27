@@ -1,7 +1,10 @@
 import { connectionService } from "@/apis/connection/connectionService";
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner";
 
-export const useSendConnection = () => {
+
+// options parameter can contain custom onSuccess and onError callbacks
+export const useSendConnection = (options = {}) => {
   return useMutation({
     mutationKey: ['sendConnection'],
 
@@ -9,14 +12,33 @@ export const useSendConnection = () => {
       return await connectionService.sendConnections(status, toUserId);
     },
 
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log('Connection request sent successfully:', data);
-      // Optional: you can show a toast or update local state here
-    },
 
-    onError: (error) => {
+      if (variables.status === 'interested') {
+        toast.success('Connection request sent successfully!');
+      } else if (variables.status === 'ignored') {
+        toast.success('User ignored successfully!');
+      }
+
+      // Call the custom onSuccess callback if provided
+      if (options.onSuccess) {
+        options.onSuccess(data, variables);
+      }
+    },
+    onError: (error, variables) => {
       console.error('Failed to send connection request:', error);
-      // Optional: show error notification
+
+      if (variables.status === 'interested') {
+        toast.error('Failed to send connection request. Please try again.');
+      } else if (variables.status === 'ignored') {
+        toast.error('Failed to ignore user. Please try again.');
+      }
+
+      // Call the custom onError callback if provided
+      if (options.onError) {
+        options.onError(error, variables);
+      }
     },
   });
 };
