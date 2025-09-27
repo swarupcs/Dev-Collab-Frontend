@@ -148,12 +148,12 @@ export function ConnectionsManager({ suggestedRequestData }) {
   ];
 
   // Add state to track processed users (connected or ignored)
-  const [processedUsers, setProcessedUsers] = useState(new Set());
+  const [processedSuggestUsers, setProcessedSuggestUsers] = useState(new Set());
 
   const { mutate, isLoading } = useSendConnection({
     onSuccess: (data, variables) => {
       // Remove user from list after successful API call
-      setProcessedUsers((prev) => new Set(prev).add(variables.toUserId));
+      setProcessedSuggestUsers((prev) => new Set(prev).add(variables.toUserId));
     },
   });
   const handleSendConnectionRequest = (developerId) => {
@@ -170,7 +170,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
 
   const filteredDevelopers = suggestedRequestData.filter((dev) => {
     // First filter out users who have been processed (connected or ignored)
-    if (processedUsers.has(dev._id)) {
+    if (processedSuggestUsers.has(dev._id)) {
       return false;
     }
 
@@ -194,13 +194,24 @@ export function ConnectionsManager({ suggestedRequestData }) {
     return matchesSearch && matchesSkill;
   });
 
+
+  const [processedRequests, setProcessedRequests] = useState(new Set());
+  const { mutate: reviewMutate, isLoading: reviewIsLoading } = useSendConnection({
+    onSuccess: (data, variables) => {
+      // Remove request from list after successful API call
+      setProcessedRequests((prev) => new Set(prev).add(variables.requestId));
+    }
+  });
+
   const handleAcceptRequest = (requestId) => {
-    console.log('[v0] Accepting connection request:', requestId);
+    // console.log('[v0] Accepting connection request:', requestId);
+    reviewMutate({ status: 'accepted', requestId });
     // Handle accept logic here
   };
 
   const handleRejectRequest = (requestId) => {
-    console.log('[v0] Rejecting connection request:', requestId);
+    // console.log('[v0] Rejecting connection request:', requestId);
+    reviewMutate({ status: 'rejected', requestId });
     // Handle reject logic here
   };
 
