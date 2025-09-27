@@ -10,7 +10,17 @@ export const connectionService = {
       );
       return response.data;
     } catch (error) {
-     throw handleApiError(error, 'Failed to send connection request');
+      throw handleApiError(error, 'Failed to send connection request');
+    }
+  },
+
+  // new service to get suggested requests
+  getSuggestedRequests: async () => {
+    try {
+      const response = await axiosInstance.get('/user/getSuggestionRequest');
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'Failed to fetch suggested requests');
     }
   },
 };
