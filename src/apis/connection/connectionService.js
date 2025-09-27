@@ -33,7 +33,16 @@ export const connectionService = {
     } catch (error) {
       throw handleApiError(error, 'Failed to review connection request');
     }
-  }
+  },
+
+  getPendingConnectionRequests: async () => {
+    try {
+      const response = await axiosInstance.get('/requests/getPendingRequests');
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'Failed to fetch connection requests');
+    }
+  },
 };
 
 

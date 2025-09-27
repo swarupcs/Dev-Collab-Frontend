@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, UserPlus, UserCheck, UserX, Clock, MapPin, Star, Github, Linkedin, Globe } from "lucide-react"
 import { useSendConnection } from "@/hooks/connection/useSendConnection"
+import { useGetPendingConnectionRequests } from "@/hooks/connection/getPendingConnectionRequests"
 
 
 export function ConnectionsManager({ suggestedRequestData }) {
@@ -215,6 +216,17 @@ export function ConnectionsManager({ suggestedRequestData }) {
     // Handle reject logic here
   };
 
+  const {
+    data: pendingRequests,
+    isLoading: pendingRequestLoading,
+    error,
+    refetch,
+  } = useGetPendingConnectionRequests();
+
+  const pendingRequestData = pendingRequests?.data?.requests || [];
+
+  console.log('pendingRequestMutate', pendingRequests);
+
   return (
     <div className='space-y-6'>
       <Tabs defaultValue='discover' className='space-y-6'>
@@ -386,7 +398,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
               </CardDescription>
             </CardHeader>
             <CardContent className='space-y-4'>
-              {connectionRequests.length === 0 ? (
+              {pendingRequestData.length === 0 ? (
                 <div className='text-center py-8'>
                   <Clock className='h-12 w-12 text-muted-foreground mx-auto mb-4' />
                   <h3 className='text-lg font-medium mb-2'>
@@ -395,9 +407,9 @@ export function ConnectionsManager({ suggestedRequestData }) {
                   <p className='text-muted-foreground'>You're all caught up!</p>
                 </div>
               ) : (
-                connectionRequests.map((request) => (
+                pendingRequestData.map((request) => (
                   <Card
-                    key={request.id}
+                    key={request._id}
                     className='border-l-4 border-l-primary'
                   >
                     <CardContent className='p-6'>
@@ -405,22 +417,27 @@ export function ConnectionsManager({ suggestedRequestData }) {
                         <div className='flex items-start space-x-4'>
                           <Avatar className='h-12 w-12'>
                             <AvatarImage
-                              src={request.avatar || '/placeholder.svg'}
+                              src={
+                                request.fromUserId.photoUrl ||
+                                '/placeholder.svg'
+                              }
                             />
                             <AvatarFallback>
-                              {request.name
+                              {`${request.fromUserId.firstName} ${request.fromUserId.lastName}`
                                 .split(' ')
                                 .map((n) => n[0])
                                 .join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div className='flex-1'>
-                            <h3 className='font-semibold'>{request.name}</h3>
+                            <h3 className='font-semibold'>
+                              {`${request.fromUserId.firstName} ${request.fromUserId.lastName}`}
+                            </h3>
                             <p className='text-sm text-muted-foreground'>
-                              {request.username}
+                              {request.fromUserId.emailId}
                             </p>
                             <div className='flex gap-1 mt-2'>
-                              {request.skills.map((skill) => (
+                              {request.fromUserId.skills.map((skill) => (
                                 <Badge
                                   key={skill}
                                   variant='outline'
@@ -431,8 +448,8 @@ export function ConnectionsManager({ suggestedRequestData }) {
                               ))}
                             </div>
                             <p className='text-xs text-muted-foreground mt-2'>
-                              {request.mutualConnections} mutual connections •{' '}
-                              {request.requestDate}
+                              Status: {request.status} •{' '}
+                              {new Date(request.createdAt).toLocaleDateString()}
                             </p>
                             {request.message && (
                               <div className='mt-3 p-3 bg-muted rounded-lg'>
@@ -444,7 +461,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
                         <div className='flex gap-2'>
                           <Button
                             size='sm'
-                            onClick={() => handleAcceptRequest(request.id)}
+                            onClick={() => handleAcceptRequest(request._id)}
                           >
                             <UserCheck className='h-4 w-4 mr-1' />
                             Accept
@@ -452,7 +469,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
                           <Button
                             size='sm'
                             variant='outline'
-                            onClick={() => handleRejectRequest(request.id)}
+                            onClick={() => handleRejectRequest(request._id)}
                           >
                             <UserX className='h-4 w-4 mr-1' />
                             Decline
