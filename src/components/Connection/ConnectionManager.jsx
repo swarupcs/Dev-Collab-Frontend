@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, UserPlus, UserCheck, UserX, Clock, MapPin, Star, Github, Linkedin, Globe } from "lucide-react"
+import { useSendConnection } from "@/hooks/connection/useSendConnection"
 
 
 export function ConnectionsManager({ suggestedRequestData }) {
@@ -15,7 +16,9 @@ export function ConnectionsManager({ suggestedRequestData }) {
   const [skillFilter, setSkillFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
 
-  console.log('suggestedRequestData', suggestedRequestData);
+  // console.log('suggestedRequestData', suggestedRequestData);
+
+  // Use the existing mutation hook with user removal callback
 
   // Mock data for developer discovery
   const suggestedDevelopers = [
@@ -144,15 +147,52 @@ export function ConnectionsManager({ suggestedRequestData }) {
     },
   ];
 
+  // Add state to track processed users (connected or ignored)
+  const [processedUsers, setProcessedUsers] = useState(new Set());
+
+  const { mutate, isLoading } = useSendConnection({
+    onSuccess: (data, variables) => {
+      // Remove user from list after successful API call
+      setProcessedUsers((prev) => new Set(prev).add(variables.toUserId));
+    },
+  });
   const handleSendConnectionRequest = (developerId) => {
-    console.log('[v0] Sending connection request to:', developerId);
+    // console.log('[v0] Sending connection request to:', developerId);
+    mutate({ status: 'interested', toUserId: developerId });
     // Handle connection request logic here
   };
 
   const handleIgnoreUser = (developerId) => {
-    console.log('[v0] Ignoring user:', developerId);
+    // console.log('[v0] Ignoring user:', developerId);
+    mutate({ status: 'ignored', toUserId: developerId });
     // Handle ignore logic here
-  }
+  };
+
+  const filteredDevelopers = suggestedRequestData.filter((dev) => {
+    // First filter out users who have been processed (connected or ignored)
+    if (processedUsers.has(dev._id)) {
+      return false;
+    }
+
+    const fullName = `${dev.firstName} ${dev.lastName}`.toLowerCase();
+    const email = dev.emailId.toLowerCase();
+    const searchTerm = searchQuery.toLowerCase();
+
+    // Check if search matches name, email, or skills
+    const matchesSearch =
+      fullName.includes(searchTerm) ||
+      email.includes(searchTerm) ||
+      (dev.skills &&
+        dev.skills.length > 0 &&
+        dev.skills.some((skill) => skill.toLowerCase().includes(searchTerm)));
+
+    // Check if skill filter matches (only if skills array exists and has items)
+    const matchesSkill =
+      skillFilter === 'all' ||
+      (dev.skills && dev.skills.length > 0 && dev.skills.includes(skillFilter));
+
+    return matchesSearch && matchesSkill;
+  });
 
   const handleAcceptRequest = (requestId) => {
     console.log('[v0] Accepting connection request:', requestId);
@@ -163,27 +203,6 @@ export function ConnectionsManager({ suggestedRequestData }) {
     console.log('[v0] Rejecting connection request:', requestId);
     // Handle reject logic here
   };
-
-const filteredDevelopers = suggestedRequestData.filter((dev) => {
-  const fullName = `${dev.firstName} ${dev.lastName}`.toLowerCase();
-  const email = dev.emailId.toLowerCase();
-  const searchTerm = searchQuery.toLowerCase();
-
-  // Check if search matches name, email, or skills
-  const matchesSearch =
-    fullName.includes(searchTerm) ||
-    email.includes(searchTerm) ||
-    (dev.skills &&
-      dev.skills.length > 0 &&
-      dev.skills.some((skill) => skill.toLowerCase().includes(searchTerm)));
-
-  // Check if skill filter matches (only if skills array exists and has items)
-  const matchesSkill =
-    skillFilter === 'all' ||
-    (dev.skills && dev.skills.length > 0 && dev.skills.includes(skillFilter));
-
-  return matchesSearch && matchesSkill;
-});
 
   return (
     <div className='space-y-6'>
@@ -310,6 +329,7 @@ const filteredDevelopers = suggestedRequestData.filter((dev) => {
                             onClick={() =>
                               handleSendConnectionRequest(developer._id)
                             }
+                            disabled={isLoading}
                           >
                             <UserPlus className='h-4 w-4 mr-1' />
                             Connect
@@ -318,6 +338,7 @@ const filteredDevelopers = suggestedRequestData.filter((dev) => {
                             size='sm'
                             variant='outline'
                             onClick={() => handleIgnoreUser(developer._id)}
+                            disabled={isLoading}
                           >
                             <UserX className='h-4 w-4 mr-1' />
                             Ignore
@@ -328,6 +349,15 @@ const filteredDevelopers = suggestedRequestData.filter((dev) => {
                   </Card>
                 ))}
               </div>
+
+              {/* Show message when no developers are available */}
+              {filteredDevelopers.length === 0 && (
+                <div className='text-center py-8'>
+                  <p className='text-muted-foreground'>
+                    No developers found matching your criteria.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
