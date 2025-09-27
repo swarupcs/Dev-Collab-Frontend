@@ -1,10 +1,9 @@
 import { authService } from '@/apis/auth/authService';
-import { useAppStore } from '@/store';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export const useSignin = () => {
-  const setUser = useAppStore((state) => state.setUser);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -16,22 +15,22 @@ export const useSignin = () => {
 
     onSuccess: (data) => {
       try {
-        const user = data.user; // assuming API returns { user, token }
-        const token = data.token;
+        const user = data?.data?.user; // assuming API returns { user, token }
+
+        console.log('user signed in successfully:', data?.data?.user);
 
         if (user) {
           // Update Zustand store
-          setUser(user);
 
           // Invalidate auth-related queries
           queryClient.invalidateQueries({ queryKey: ['auth'] });
+          toast.success('Signed in successfully!');
         }
 
-        if (token) {
-          localStorage.setItem('authToken', token);
-        }
       } catch (error) {
         console.error('Error processing signin success:', error);
+        console.log("error", error);
+        toast.error('An error occurred during signin. Please try again.');
       }
     },
   });

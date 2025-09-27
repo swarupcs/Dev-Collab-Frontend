@@ -1,10 +1,9 @@
 import { authService } from '@/apis/auth/authService';
-import { useAppStore } from '@/store';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export const useSignup = () => {
-const setUser = useAppStore((state) => state.setUser);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -16,28 +15,23 @@ const setUser = useAppStore((state) => state.setUser);
 
     onSuccess: (data) => {
       try {
-        // Extract user data from the response
-        const user = data.data?.user;
+        const user = data?.data?.user; // assuming API returns { user, token }
+
+        console.log('user signed up successfully:', data?.data?.user);
 
         if (user) {
-          // Update the auth store with user data
-          setUser(user);
+          // Update Zustand store
 
-          // Invalidate and refetch auth-related queries
+          // Invalidate auth-related queries
           queryClient.invalidateQueries({ queryKey: ['auth'] });
-        }
-
-        // If your API returns a token, it should be handled by axios interceptor
-        // or you can handle it here if needed
-        if (data.token) {
-          // Store token logic if not handled by interceptor
-          localStorage.setItem('authToken', data.token);
+          toast.success('Signed up successfully!');
         }
       } catch (error) {
-        console.error('Error processing signup success:', error);
+        console.error('Error processing signin success:', error);
+        console.log('error', error);
+        toast.error('An error occurred during signin. Please try again.');
       }
     },
-
   });
 };
 
