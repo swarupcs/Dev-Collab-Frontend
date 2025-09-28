@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, UserPlus, UserCheck, UserX, Clock, MapPin, Star, Github, Linkedin, Globe } from "lucide-react"
+import { Search, UserPlus, UserCheck, UserX, Clock, MapPin, Star, Github, Linkedin, Globe, Calendar } from "lucide-react"
 import { useSendConnection } from "@/hooks/connection/useSendConnection"
 import { useGetPendingConnectionRequests } from "@/hooks/connection/getPendingConnectionRequests"
 import { useReviewConnectionRequest } from "@/hooks/connection/useReviewConnectionRequest"
+import { useGetMyConnections } from "@/hooks/connection/getMyConnections"
 
 
 export function ConnectionsManager({ suggestedRequestData }) {
@@ -196,7 +197,6 @@ export function ConnectionsManager({ suggestedRequestData }) {
     return matchesSearch && matchesSkill;
   });
 
-  
   const {
     data: pendingRequests,
     isLoading: pendingRequestLoading,
@@ -204,10 +204,11 @@ export function ConnectionsManager({ suggestedRequestData }) {
     refetch,
   } = useGetPendingConnectionRequests();
 
+  const [pendingRequestData, setPendingRequestData] = useState(
+    pendingRequests?.data?.requests || []
+  );
 
-    const [pendingRequestData, setPendingRequestData] = useState(pendingRequests?.data?.requests || []);
-
-    console.log('pendingRequestData', pendingRequestData);
+  console.log('pendingRequestData', pendingRequestData);
 
   const [processedReviewRequests, setProcessedReviewRequests] = useState(
     new Set()
@@ -222,7 +223,6 @@ export function ConnectionsManager({ suggestedRequestData }) {
       },
     });
 
-
   const handleAcceptRequest = (requestId) => {
     // console.log('[v0] Accepting connection request:', requestId);
     reviewMutate({ status: 'accepted', requestId });
@@ -235,7 +235,84 @@ export function ConnectionsManager({ suggestedRequestData }) {
     // Handle reject logic here
   };
 
+  const {
+    data: userConnections,
+    isLoading: userConnectionsLoading,
+    error: userConnectionsError,
+    isError,
+    refetch: refetchUserConnections,
+  } = useGetMyConnections();
 
+  const [userConnectionsData, setUserConnectionsData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (userConnections?.data?.connections) {
+      setUserConnectionsData(userConnections.data.connections);
+    }
+  }, [userConnections]);
+  // console.log("userConnectionsData", userConnectionsData);
+
+  // Filter connections based on search term
+  const filteredConnections = userConnectionsData.filter(
+    (connection) =>
+      `${connection.connectedUser.firstName} ${connection.connectedUser.lastName}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      connection.connectedUser.emailId
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+  );
+
+    if (userConnectionsLoading) {
+      return (
+        <TabsContent value='connections' className='space-y-6'>
+          <Card>
+            <CardHeader>
+              <CardTitle className='flex items-center gap-2'>
+                <UserCheck className='h-5 w-5' />
+                My Network
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className='flex items-center justify-center py-8'>
+                <div className='text-center'>
+                  <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
+                  <p>Loading your connections...</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      );
+    }
+
+      if (isError) {
+        return (
+          <TabsContent value='connections' className='space-y-6'>
+            <Card>
+              <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                  <UserCheck className='h-5 w-5' />
+                  My Network
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className='text-center py-8'>
+                  <p className='text-red-500 mb-4'>
+                    Error:{' '}
+                    {userConnectionsError?.message ||
+                      'Failed to load connections'}
+                  </p>
+                  <Button onClick={() => refetchUserConnections()}>
+                    Try Again
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        );
+      }
 
   // console.log('pendingRequestMutate', pendingRequests);
 
@@ -505,7 +582,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
                 My Network
               </CardTitle>
               <CardDescription>
-                Your developer connections ({myConnections.length} total)
+                Your developer connections ({filteredConnections.length} total)
               </CardDescription>
             </CardHeader>
             <CardContent className='space-y-4'>
@@ -514,109 +591,142 @@ export function ConnectionsManager({ suggestedRequestData }) {
                 <Input
                   placeholder='Search your connections...'
                   className='pl-10'
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
 
-              <div className='grid gap-4 md:grid-cols-2'>
-                {myConnections.map((connection) => (
-                  <Card
-                    key={connection.id}
-                    className='hover:shadow-md transition-shadow'
-                  >
-                    <CardContent className='p-6'>
-                      <div className='flex items-start justify-between mb-4'>
-                        <div className='flex items-center space-x-3'>
-                          <div className='relative'>
-                            <Avatar className='h-12 w-12'>
-                              <AvatarImage
-                                src={connection.avatar || '/placeholder.svg'}
-                              />
-                              <AvatarFallback>
-                                {connection.name
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div
-                              className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-background ${
-                                connection.status === 'online'
-                                  ? 'bg-green-500'
-                                  : 'bg-gray-400'
-                              }`}
-                            />
-                          </div>
-                          <div>
-                            <h3 className='font-semibold'>{connection.name}</h3>
-                            <p className='text-sm text-muted-foreground'>
-                              {connection.username}
-                            </p>
-                            <div className='flex items-center gap-1 mt-1'>
-                              <MapPin className='h-3 w-3 text-muted-foreground' />
-                              <span className='text-xs text-muted-foreground'>
-                                {connection.location}
-                              </span>
+              {filteredConnections.length === 0 ? (
+                <div className='text-center py-8'>
+                  <p className='text-muted-foreground'>
+                    {searchTerm
+                      ? 'No connections found matching your search.'
+                      : 'No connections found.'}
+                  </p>
+                </div>
+              ) : (
+                <div className='grid gap-4 md:grid-cols-2'>
+                  {filteredConnections.map((connection) => {
+                    const user = connection.connectedUser;
+                    const fullName = `${user.firstName} ${user.lastName}`;
+                    const initials = `${user.firstName[0]}${user.lastName[0]}`;
+
+                    return (
+                      <Card
+                        key={connection._id}
+                        className='hover:shadow-md transition-shadow'
+                      >
+                        <CardContent className='p-6'>
+                          <div className='flex items-start justify-between mb-4'>
+                            <div className='flex items-center space-x-3'>
+                              <div className='relative'>
+                                <Avatar className='h-12 w-12'>
+                                  <AvatarImage
+                                    src={user.photoUrl || '/placeholder.svg'}
+                                    alt={fullName}
+                                  />
+                                  <AvatarFallback>{initials}</AvatarFallback>
+                                </Avatar>
+                                {/* You can add online status if available in your data */}
+                                <div className='absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-background bg-gray-400' />
+                              </div>
+                              <div>
+                                <h3 className='font-semibold'>{fullName}</h3>
+                                <p className='text-sm text-muted-foreground'>
+                                  {user.emailId}
+                                </p>
+                                <div className='flex items-center gap-1 mt-1'>
+                                  <Calendar className='h-3 w-3 text-muted-foreground' />
+                                  <span className='text-xs text-muted-foreground'>
+                                    Connected{' '}
+                                    {new Date(
+                                      connection.createdAt
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className='flex items-center gap-1'>
+                            {/* Rating section - you can remove this if not available */}
+                            {/* <div className='flex items-center gap-1'>
                           <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
                           <span className='text-sm font-medium'>
-                            {connection.rating}
+                            {connection.rating || 'N/A'}
                           </span>
-                        </div>
-                      </div>
+                        </div> */}
+                          </div>
 
-                      <p className='text-sm text-muted-foreground mb-3'>
-                        {connection.bio}
-                      </p>
-
-                      <div className='flex flex-wrap gap-1 mb-3'>
-                        {connection.skills.slice(0, 3).map((skill) => (
-                          <Badge
-                            key={skill}
-                            variant='outline'
-                            className='text-xs'
-                          >
-                            {skill}
-                          </Badge>
-                        ))}
-                        {connection.skills.length > 3 && (
-                          <Badge variant='outline' className='text-xs'>
-                            +{connection.skills.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className='flex items-center justify-between'>
-                        <div className='flex gap-2'>
-                          {connection.github && (
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              className='h-8 w-8 p-0'
-                            >
-                              <Github className='h-4 w-4' />
-                            </Button>
+                          {/* Bio section - you can add this if available in your data */}
+                          {user.bio && (
+                            <p className='text-sm text-muted-foreground mb-3'>
+                              {user.bio}
+                            </p>
                           )}
-                          {connection.linkedin && (
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              className='h-8 w-8 p-0'
-                            >
-                              <Linkedin className='h-4 w-4' />
-                            </Button>
+
+                          {/* Skills section */}
+                          {user.skills && user.skills.length > 0 && (
+                            <div className='flex flex-wrap gap-1 mb-3'>
+                              {user.skills.slice(0, 3).map((skill, index) => (
+                                <Badge
+                                  key={`${skill}-${index}`}
+                                  variant='outline'
+                                  className='text-xs'
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {user.skills.length > 3 && (
+                                <Badge variant='outline' className='text-xs'>
+                                  +{user.skills.length - 3}
+                                </Badge>
+                              )}
+                            </div>
                           )}
-                        </div>
-                        <Button size='sm' variant='outline'>
-                          View Profile
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+
+                          <div className='flex items-center justify-between'>
+                            <div className='flex gap-2'>
+                              {/* Social links - add these if available in your data */}
+                              {user.github && (
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-8 w-8 p-0'
+                                  onClick={() =>
+                                    window.open(user.github, '_blank')
+                                  }
+                                >
+                                  <Github className='h-4 w-4' />
+                                </Button>
+                              )}
+                              {user.linkedin && (
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-8 w-8 p-0'
+                                  onClick={() =>
+                                    window.open(user.linkedin, '_blank')
+                                  }
+                                >
+                                  <Linkedin className='h-4 w-4' />
+                                </Button>
+                              )}
+                            </div>
+                            <Button
+                              size='sm'
+                              variant='outline'
+                              onClick={() => {
+                                // Navigate to user profile or handle view profile action
+                                console.log('View profile for:', user._id);
+                              }}
+                            >
+                              View Profile
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
