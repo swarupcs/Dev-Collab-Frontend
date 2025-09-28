@@ -54,6 +54,8 @@ import { ChatSystem } from '@/components/Chat/ChatSystem';
 import { useNavigate } from 'react-router-dom';
 import { useGetProfile } from '@/hooks/profile/useGetProfile';
 import { useAppStore } from '@/store';
+import { useSendConnection } from '@/hooks/connection/useSendConnection';
+import { useGetSuggestedRequests } from '@/hooks/connection/useGetSuggestedRequests';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -71,6 +73,13 @@ export default function DashboardPage() {
     refetch,
   } = useGetProfile();
 
+ const { data, isLoading: isLoadingSuggested, isError: isErrorSuggested, error: errorSuggested } = useGetSuggestedRequests();
+
+ console.log('data', data?.data?.suggestedUsers);
+
+ const suggestedRequestData = data?.data?.suggestedUsers || [];
+
+
   // console.log("profileData", profileData);
   // console.log("isLoading", isLoading);
   // console.log("isError", isError);
@@ -79,7 +88,7 @@ export default function DashboardPage() {
   // console.log("refetch", refetch);
 
   const userProfileData = useAppStore((state) => state.userProfile);
-  console.log("userProfileData", userProfileData);
+  // console.log("userProfileData", userProfileData);
 
   const { firstName, lastName, _id, emailId, photoUrl, skills, about } =
     userProfileData || {};
@@ -286,7 +295,9 @@ export default function DashboardPage() {
                   >
                     <Avatar className='h-8 w-8'>
                       <AvatarImage src={photoUrl} />
-                      <AvatarFallback>{firstName[0]+lastName[0]}</AvatarFallback>
+                      <AvatarFallback>
+                        {firstName[0] + lastName[0]}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -357,7 +368,9 @@ export default function DashboardPage() {
           <TabsContent value='overview' className='space-y-6'>
             <Card>
               <CardHeader>
-                <CardTitle className='text-2xl'>Welcome back, {firstName}</CardTitle>
+                <CardTitle className='text-2xl'>
+                  Welcome back, {firstName}
+                </CardTitle>
                 <CardDescription>
                   Here's what's happening in your developer network today.
                 </CardDescription>
@@ -503,7 +516,7 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value='connections'>
-            <ConnectionsManager />
+            <ConnectionsManager suggestedRequestData={suggestedRequestData} />
           </TabsContent>
 
           <TabsContent value='chat'>
