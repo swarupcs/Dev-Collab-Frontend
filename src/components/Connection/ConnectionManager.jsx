@@ -196,6 +196,18 @@ export function ConnectionsManager({ suggestedRequestData }) {
     return matchesSearch && matchesSkill;
   });
 
+  
+  const {
+    data: pendingRequests,
+    isLoading: pendingRequestLoading,
+    error,
+    refetch,
+  } = useGetPendingConnectionRequests();
+
+
+    const [pendingRequestData, setPendingRequestData] = useState(pendingRequests?.data?.requests || []);
+
+    console.log('pendingRequestData', pendingRequestData);
 
   const [processedReviewRequests, setProcessedReviewRequests] = useState(
     new Set()
@@ -203,9 +215,9 @@ export function ConnectionsManager({ suggestedRequestData }) {
   const { mutate: reviewMutate, isLoading: reviewIsLoading } =
     useReviewConnectionRequest({
       onSuccess: (data, variables) => {
-        // Remove request from list after successful API call
-        setProcessedReviewRequests((prev) =>
-          new Set(prev).add(variables.requestId)
+        // Update pendingRequestData by removing the processed request
+        setPendingRequestData((prevData) =>
+          prevData.filter((request) => request._id !== variables.requestId)
         );
       },
     });
@@ -223,16 +235,9 @@ export function ConnectionsManager({ suggestedRequestData }) {
     // Handle reject logic here
   };
 
-  const {
-    data: pendingRequests,
-    isLoading: pendingRequestLoading,
-    error,
-    refetch,
-  } = useGetPendingConnectionRequests();
 
-  const pendingRequestData = pendingRequests?.data?.requests || [];
 
-  console.log('pendingRequestMutate', pendingRequests);
+  // console.log('pendingRequestMutate', pendingRequests);
 
   return (
     <div className='space-y-6'>
@@ -241,12 +246,12 @@ export function ConnectionsManager({ suggestedRequestData }) {
           <TabsTrigger value='discover'>Discover</TabsTrigger>
           <TabsTrigger value='requests'>
             Requests
-            {connectionRequests.length > 0 && (
+            {pendingRequestData.length > 0 && (
               <Badge
                 variant='secondary'
                 className='ml-2 h-5 w-5 rounded-full p-0 text-xs'
               >
-                {connectionRequests.length}
+                {pendingRequestData.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -405,9 +410,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
               </CardDescription>
             </CardHeader>
             <CardContent className='space-y-4'>
-              {pendingRequestData.filter(
-                (request) => !processedReviewRequests.has(request._id)
-              ).length === 0 ? (
+              {pendingRequestData.length === 0 ? (
                 <div className='text-center py-8'>
                   <Clock className='h-12 w-12 text-muted-foreground mx-auto mb-4' />
                   <h3 className='text-lg font-medium mb-2'>
@@ -416,84 +419,78 @@ export function ConnectionsManager({ suggestedRequestData }) {
                   <p className='text-muted-foreground'>You're all caught up!</p>
                 </div>
               ) : (
-                pendingRequestData
-                  .filter(
-                    (request) => !processedReviewRequests.has(request._id)
-                  )
-                  .map((request) => (
-                    <Card
-                      key={request._id}
-                      className='border-l-4 border-l-primary'
-                    >
-                      <CardContent className='p-6'>
-                        <div className='flex items-start justify-between'>
-                          <div className='flex items-start space-x-4'>
-                            <Avatar className='h-12 w-12'>
-                              <AvatarImage
-                                src={
-                                  request.fromUserId.photoUrl ||
-                                  '/placeholder.svg'
-                                }
-                              />
-                              <AvatarFallback>
-                                {`${request.fromUserId.firstName} ${request.fromUserId.lastName}`
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className='flex-1'>
-                              <h3 className='font-semibold'>
-                                {`${request.fromUserId.firstName} ${request.fromUserId.lastName}`}
-                              </h3>
-                              <p className='text-sm text-muted-foreground'>
-                                {request.fromUserId.emailId}
-                              </p>
-                              <div className='flex gap-1 mt-2'>
-                                {request.fromUserId.skills.map((skill) => (
-                                  <Badge
-                                    key={skill}
-                                    variant='outline'
-                                    className='text-xs'
-                                  >
-                                    {skill}
-                                  </Badge>
-                                ))}
-                              </div>
-                              <p className='text-xs text-muted-foreground mt-2'>
-                                Status: {request.status} •{' '}
-                                {new Date(
-                                  request.createdAt
-                                ).toLocaleDateString()}
-                              </p>
-                              {request.message && (
-                                <div className='mt-3 p-3 bg-muted rounded-lg'>
-                                  <p className='text-sm'>{request.message}</p>
-                                </div>
-                              )}
+                pendingRequestData.map((request) => (
+                  <Card
+                    key={request._id}
+                    className='border-l-4 border-l-primary'
+                  >
+                    <CardContent className='p-6'>
+                      <div className='flex items-start justify-between'>
+                        <div className='flex items-start space-x-4'>
+                          <Avatar className='h-12 w-12'>
+                            <AvatarImage
+                              src={
+                                request.fromUserId.photoUrl ||
+                                '/placeholder.svg'
+                              }
+                            />
+                            <AvatarFallback>
+                              {`${request.fromUserId.firstName} ${request.fromUserId.lastName}`
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className='flex-1'>
+                            <h3 className='font-semibold'>
+                              {`${request.fromUserId.firstName} ${request.fromUserId.lastName}`}
+                            </h3>
+                            <p className='text-sm text-muted-foreground'>
+                              {request.fromUserId.emailId}
+                            </p>
+                            <div className='flex gap-1 mt-2'>
+                              {request.fromUserId.skills.map((skill) => (
+                                <Badge
+                                  key={skill}
+                                  variant='outline'
+                                  className='text-xs'
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
                             </div>
-                          </div>
-                          <div className='flex gap-2'>
-                            <Button
-                              size='sm'
-                              onClick={() => handleAcceptRequest(request._id)}
-                            >
-                              <UserCheck className='h-4 w-4 mr-1' />
-                              Accept
-                            </Button>
-                            <Button
-                              size='sm'
-                              variant='outline'
-                              onClick={() => handleRejectRequest(request._id)}
-                            >
-                              <UserX className='h-4 w-4 mr-1' />
-                              Decline
-                            </Button>
+                            <p className='text-xs text-muted-foreground mt-2'>
+                              Status: {request.status} •{' '}
+                              {new Date(request.createdAt).toLocaleDateString()}
+                            </p>
+                            {request.message && (
+                              <div className='mt-3 p-3 bg-muted rounded-lg'>
+                                <p className='text-sm'>{request.message}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                        <div className='flex gap-2'>
+                          <Button
+                            size='sm'
+                            onClick={() => handleAcceptRequest(request._id)}
+                          >
+                            <UserCheck className='h-4 w-4 mr-1' />
+                            Accept
+                          </Button>
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            onClick={() => handleRejectRequest(request._id)}
+                          >
+                            <UserX className='h-4 w-4 mr-1' />
+                            Decline
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
               )}
             </CardContent>
           </Card>
