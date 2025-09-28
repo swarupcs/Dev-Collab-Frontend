@@ -112,15 +112,20 @@ export function ConnectionsManager({ suggestedRequestData }) {
   const [processedReviewRequests, setProcessedReviewRequests] = useState(
     new Set()
   );
-  const { mutate: reviewMutate, isLoading: reviewIsLoading } =
-    useReviewConnectionRequest({
-      onSuccess: (data, variables) => {
-        // Update pendingRequestData by removing the processed request
-        setPendingRequestData((prevData) =>
-          prevData.filter((request) => request._id !== variables.requestId)
-        );
-      },
-    });
+const { mutate: reviewMutate, isLoading: reviewIsLoading } =
+  useReviewConnectionRequest({
+    onSuccess: (data, variables) => {
+      // Update pendingRequestData by removing the processed request
+      setPendingRequestData((prevData) =>
+        prevData.filter((request) => request._id !== variables.requestId)
+      );
+
+      // Refetch connections if request was accepted
+      if (variables.status === 'accepted') {
+        refetchUserConnections();
+      }
+    },
+  });
 
   const {
     data: userConnections,
@@ -130,20 +135,16 @@ export function ConnectionsManager({ suggestedRequestData }) {
     refetch: refetchUserConnections,
   } = useGetMyConnections();
 
-  const reviewConnection = useReviewConnectionRequest({
-    refetchConnections: refetchUserConnections, // 👈 pass it here
-  });
-  const handleAcceptRequest = (requestId) => {
-    // console.log('[v0] Accepting connection request:', requestId);
-    reviewConnection.mutate({ status: 'accepted', requestId });
-    // Handle accept logic here
-  };
 
-  const handleRejectRequest = (requestId) => {
-    // console.log('[v0] Rejecting connection request:', requestId);
-    reviewConnection.mutate({ status: 'rejected', requestId });
-    // Handle reject logic here
-  };
+const handleAcceptRequest = (requestId) => {
+  console.log('[v0] Accepting connection request:', requestId);
+  reviewMutate({ status: 'accepted', requestId });
+};
+
+const handleRejectRequest = (requestId) => {
+  console.log('[v0] Rejecting connection request:', requestId);
+  reviewMutate({ status: 'rejected', requestId });
+};
 
   const [userConnectionsData, setUserConnectionsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
