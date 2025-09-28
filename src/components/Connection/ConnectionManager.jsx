@@ -1,25 +1,45 @@
-
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, UserPlus, UserCheck, UserX, Clock, MapPin, Star, Github, Linkedin, Globe, Calendar } from "lucide-react"
-import { useSendConnection } from "@/hooks/connection/useSendConnection"
-import { useGetPendingConnectionRequests } from "@/hooks/connection/getPendingConnectionRequests"
-import { useReviewConnectionRequest } from "@/hooks/connection/useReviewConnectionRequest"
-import { useGetMyConnections } from "@/hooks/connection/getMyConnections"
-
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Search,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Clock,
+  MapPin,
+  Star,
+  Github,
+  Linkedin,
+  Globe,
+  Calendar,
+} from 'lucide-react';
+import { useSendConnection } from '@/hooks/connection/useSendConnection';
+import { useGetPendingConnectionRequests } from '@/hooks/connection/getPendingConnectionRequests';
+import { useReviewConnectionRequest } from '@/hooks/connection/useReviewConnectionRequest';
+import { useGetMyConnections } from '@/hooks/connection/getMyConnections';
 
 export function ConnectionsManager({ suggestedRequestData }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [skillFilter, setSkillFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
-
-
 
   // Add state to track processed users (connected or ignored)
   const [processedSuggestUsers, setProcessedSuggestUsers] = useState(new Set());
@@ -75,7 +95,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
     refetch,
   } = useGetPendingConnectionRequests();
 
-  console.log("pendingRequests", pendingRequests);
+  console.log('pendingRequests', pendingRequests);
 
   const [pendingRequestData, setPendingRequestData] = useState(
     pendingRequests?.data?.requests || []
@@ -102,18 +122,6 @@ export function ConnectionsManager({ suggestedRequestData }) {
       },
     });
 
-  const handleAcceptRequest = (requestId) => {
-    // console.log('[v0] Accepting connection request:', requestId);
-    reviewMutate({ status: 'accepted', requestId });
-    // Handle accept logic here
-  };
-
-  const handleRejectRequest = (requestId) => {
-    // console.log('[v0] Rejecting connection request:', requestId);
-    reviewMutate({ status: 'rejected', requestId });
-    // Handle reject logic here
-  };
-
   const {
     data: userConnections,
     isLoading: userConnectionsLoading,
@@ -121,6 +129,21 @@ export function ConnectionsManager({ suggestedRequestData }) {
     isError,
     refetch: refetchUserConnections,
   } = useGetMyConnections();
+
+  const reviewConnection = useReviewConnectionRequest({
+    refetchConnections: refetchUserConnections, // 👈 pass it here
+  });
+  const handleAcceptRequest = (requestId) => {
+    // console.log('[v0] Accepting connection request:', requestId);
+    reviewConnection.mutate({ status: 'accepted', requestId });
+    // Handle accept logic here
+  };
+
+  const handleRejectRequest = (requestId) => {
+    // console.log('[v0] Rejecting connection request:', requestId);
+    reviewConnection.mutate({ status: 'rejected', requestId });
+    // Handle reject logic here
+  };
 
   const [userConnectionsData, setUserConnectionsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,55 +166,54 @@ export function ConnectionsManager({ suggestedRequestData }) {
         .includes(searchTerm.toLowerCase())
   );
 
-    if (userConnectionsLoading) {
-      return (
-        <TabsContent value='connections' className='space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
-                <UserCheck className='h-5 w-5' />
-                My Network
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className='flex items-center justify-center py-8'>
-                <div className='text-center'>
-                  <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
-                  <p>Loading your connections...</p>
-                </div>
+  if (userConnectionsLoading) {
+    return (
+      <TabsContent value='connections' className='space-y-6'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2'>
+              <UserCheck className='h-5 w-5' />
+              My Network
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='flex items-center justify-center py-8'>
+              <div className='text-center'>
+                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
+                <p>Loading your connections...</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      );
-    }
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    );
+  }
 
-      if (isError) {
-        return (
-          <TabsContent value='connections' className='space-y-6'>
-            <Card>
-              <CardHeader>
-                <CardTitle className='flex items-center gap-2'>
-                  <UserCheck className='h-5 w-5' />
-                  My Network
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className='text-center py-8'>
-                  <p className='text-red-500 mb-4'>
-                    Error:{' '}
-                    {userConnectionsError?.message ||
-                      'Failed to load connections'}
-                  </p>
-                  <Button onClick={() => refetchUserConnections()}>
-                    Try Again
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        );
-      }
+  if (isError) {
+    return (
+      <TabsContent value='connections' className='space-y-6'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2'>
+              <UserCheck className='h-5 w-5' />
+              My Network
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='text-center py-8'>
+              <p className='text-red-500 mb-4'>
+                Error:{' '}
+                {userConnectionsError?.message || 'Failed to load connections'}
+              </p>
+              <Button onClick={() => refetchUserConnections()}>
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    );
+  }
 
   // console.log('pendingRequestMutate', pendingRequests);
 
