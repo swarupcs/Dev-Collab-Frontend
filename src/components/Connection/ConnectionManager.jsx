@@ -75,9 +75,17 @@ export function ConnectionsManager({ suggestedRequestData }) {
     refetch,
   } = useGetPendingConnectionRequests();
 
+  console.log("pendingRequests", pendingRequests);
+
   const [pendingRequestData, setPendingRequestData] = useState(
     pendingRequests?.data?.requests || []
   );
+
+  useEffect(() => {
+    if (pendingRequests?.data?.requests) {
+      setPendingRequestData(pendingRequests.data.requests);
+    }
+  }, [pendingRequests]);
 
   console.log('pendingRequestData', pendingRequestData);
 
