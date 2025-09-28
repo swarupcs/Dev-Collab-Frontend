@@ -22,4 +22,13 @@ export const authService = {
       throw handleApiError(error, 'Signin failed');
     }
   },
+
+  signout: async () => {
+    try {
+      const response = await axiosInstance.post('/auth/signout');
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'Signout failed');
+    }
+  },
 };
