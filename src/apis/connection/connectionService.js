@@ -43,6 +43,15 @@ export const connectionService = {
       throw handleApiError(error, 'Failed to fetch connection requests');
     }
   },
+
+  getMyConnections: async () => {
+    try {
+      const response = await axiosInstance.get('/requests/getMyConnections');
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'Failed to fetch connections');
+    }
+  },
 };
 
 
