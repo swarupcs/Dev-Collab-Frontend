@@ -40,6 +40,7 @@ import {
   RefreshCw,
   AlertCircle,
 } from 'lucide-react';
+import { useGetUserChat } from '@/hooks/chat/useGetUserChat';
 
 // Note: Socket.IO client not available in artifacts.
 // For production, install: npm install socket.io-client
@@ -61,6 +62,7 @@ export default function ChatSystem() {
   const currentUserId = useRef(null);
   const API_BASE = 'http://localhost:8080/api';
 
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -70,50 +72,23 @@ export default function ChatSystem() {
   }, [chatMessages]);
 
   // Fetch user's chats on mount
-  useEffect(() => {
-    fetchUserChats();
-  }, []);
 
-  const fetchUserChats = async () => {
-    try {
-      setIsLoadingChats(true);
-      setError(null);
+  const { data: userChat, isLoading, isError } = useGetUserChat();
 
-      const response = await fetch(`${API_BASE}/chats/getUserChats`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  const userChatDetails = userChat?.data?.chats || [];
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+  
+  const selectedChat = userChatDetails.find(
+    (chat) => chat._id === selectedChatId
+  );
 
-      const data = await response.json();
-      const chats = data.data?.chats || [];
-      setUserChats(chats);
+  console.log('userChat', userChat?.data?.chats);
 
-      // Set current user ID from first chat if available
-      if (chats.length > 0 && chats[0].participants) {
-        const firstChat = chats[0];
-        const otherParticipant = firstChat.otherParticipant;
-        // Current user is the one who is NOT the other participant
-        const currentUser = firstChat.participants.find(
-          (p) => p._id !== otherParticipant._id
-        );
-        if (currentUser) {
-          currentUserId.current = currentUser._id;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching chats:', error);
-      setError('Failed to load chats. Please check your connection.');
-    } finally {
-      setIsLoadingChats(false);
-    }
-  };
+  // useEffect(() => {
+  //   setUserChats(userChatDetails);
+  // }, [userChatDetails]);
+
+  const fetchUserChats = async () => {};
 
   // Load messages when chat is selected
   useEffect(() => {
@@ -175,9 +150,9 @@ export default function ChatSystem() {
     }
   };
 
-  const handleChatSelect = async (chatId) => {
-    setSelectedChatId(chatId);
-  };
+  // const handleChatSelect = async (chatId) => {
+  //   setSelectedChatId(chatId);
+  // };
 
   const handleSendMessage = async () => {
     if (!message.trim() || !selectedChatId) return;
@@ -237,47 +212,60 @@ export default function ChatSystem() {
     setEditText('');
   };
 
-  const getStatusColor = (lastSeen) => {
-    if (!lastSeen) return 'bg-gray-400';
+  // Get status color based on last activity
+  const getStatusColor = (lastActivity) => {
+    if (!lastActivity) return 'bg-gray-400';
 
     const now = new Date();
-    const lastSeenDate = new Date(lastSeen);
-    const minutesAgo = (now - lastSeenDate) / (1000 * 60);
+    const lastActiveTime = new Date(lastActivity);
+    const diffMinutes = (now - lastActiveTime) / 60000;
 
-    if (minutesAgo < 5) return 'bg-green-500';
-    if (minutesAgo < 30) return 'bg-yellow-500';
-    return 'bg-gray-400';
+    if (diffMinutes < 5) return 'bg-green-500'; // Online
+    if (diffMinutes < 30) return 'bg-yellow-500'; // Away
+    return 'bg-gray-400'; // Offline
   };
 
-  const formatLastMessageTime = (date) => {
-    if (!date) return '';
+  // Format last activity time
+  const formatLastMessageTime = (timestamp) => {
+    if (!timestamp) return '';
 
+    const date = new Date(timestamp);
     const now = new Date();
-    const messageDate = new Date(date);
-    const diffMs = now - messageDate;
-    const diffMins = Math.floor(diffMs / 60000);
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
 
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   };
 
-  const filteredChats = userChats.filter(
-    (chat) =>
-      chat.otherParticipant?.username
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      chat.otherParticipant?.email
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase())
-  );
+  // Filter chats based on search query
+  const filteredChats = userChatDetails.filter((chat) => {
+    if (!searchQuery) return true;
 
-  const selectedChat = userChats.find((c) => c._id === selectedChatId);
+    const otherUser = chat.otherParticipant;
+    const fullName = `${otherUser?.firstName || ''} ${
+      otherUser?.lastName || ''
+    }`.toLowerCase();
+    const email = otherUser?.emailId?.toLowerCase() || '';
+
+    return (
+      fullName.includes(searchQuery.toLowerCase()) ||
+      email.includes(searchQuery.toLowerCase())
+    );
+  });
+
+  // Handle chat selection
+  const handleChatSelect = (chatId) => {
+    // if (onChatSelect) {
+    //   onChatSelect(chatId);
+    // }
+  };
 
   return (
     <div className='grid gap-6 lg:grid-cols-3 h-[600px]'>
@@ -343,32 +331,37 @@ export default function ChatSystem() {
                         <Avatar className='h-10 w-10'>
                           <AvatarImage
                             src={
-                              chat.otherParticipant?.avatar ||
+                              chat.otherParticipant?.photoUrl ||
                               '/placeholder.svg'
                             }
                           />
                           <AvatarFallback>
-                            {chat.otherParticipant?.username
-                              ?.substring(0, 2)
-                              .toUpperCase() || '??'}
+                            {chat.otherParticipant?.firstName
+                              ? `${chat.otherParticipant.firstName.charAt(0)}${
+                                  chat.otherParticipant.lastName?.charAt(0) ||
+                                  ''
+                                }`.toUpperCase()
+                              : '??'}
                           </AvatarFallback>
                         </Avatar>
                         <div
                           className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-background ${getStatusColor(
-                            chat.otherParticipant?.lastSeen
+                            chat.lastActivity
                           )}`}
                         />
                       </div>
                       <div className='flex-1 min-w-0'>
                         <div className='flex items-center justify-between'>
                           <h4 className='font-medium truncate'>
-                            {chat.otherParticipant?.username || 'Unknown User'}
+                            {chat.otherParticipant?.firstName &&
+                            chat.otherParticipant?.lastName
+                              ? `${chat.otherParticipant.firstName} ${chat.otherParticipant.lastName}`
+                              : chat.otherParticipant?.emailId ||
+                                'Unknown User'}
                           </h4>
                           <div className='flex items-center gap-2'>
                             <span className='text-xs text-muted-foreground'>
-                              {formatLastMessageTime(
-                                chat.lastMessage?.createdAt
-                              )}
+                              {formatLastMessageTime(chat.lastActivity)}
                             </span>
                             {chat.unreadCount > 0 && (
                               <Badge
@@ -382,7 +375,8 @@ export default function ChatSystem() {
                         </div>
                         <div className='flex items-center justify-between'>
                           <p className='text-sm text-muted-foreground truncate'>
-                            {chat.lastMessage?.text || 'No messages yet'}
+                            {chat.otherParticipant?.emailId ||
+                              'No messages yet'}
                           </p>
                         </div>
                       </div>

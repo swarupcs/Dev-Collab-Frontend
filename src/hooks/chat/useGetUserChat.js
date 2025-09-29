@@ -7,9 +7,10 @@ import { useEffect } from "react";
 export const useGetUserChat = () => {
   const queryClient = useQueryClient();
   const socket = useSocket();
+
   const query = useQuery({
     queryKey: chatKeys.lists(),
-    queryFn: chatService.getUserChats,
+    queryFn: chatService.getUserChat,
     staleTime: 30000, // Consider data fresh for 30 seconds
     refetchOnWindowFocus: true,
     refetchInterval: false, // Don't poll, rely on real-time updates
@@ -48,10 +49,7 @@ export const useGetUserChat = () => {
           const [movedChat] = updatedChats.splice(existingChatIndex, 1);
           updatedChats.unshift(movedChat);
 
-          return {
-            ...oldData,
-            data: { chats: updatedChats },
-          };
+          return { ...oldData, data: { chats: updatedChats } };
         } else {
           // New chat - refetch to get full chat data
           queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
@@ -103,10 +101,7 @@ export const useGetUserChat = () => {
           return chat;
         });
 
-        return {
-          ...oldData,
-          data: { chats: updatedChats },
-        };
+        return { ...oldData, data: { chats: updatedChats } };
       });
     };
 
@@ -120,4 +115,7 @@ export const useGetUserChat = () => {
       socket.off('messageDeleted', handleMessageDeleted);
     };
   }, [socket, queryClient]);
-}
+
+  // ✅ Return query object so component can use data, isLoading, error
+  return query;
+};

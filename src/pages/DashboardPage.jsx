@@ -49,13 +49,14 @@ import {
   Calendar,
 } from 'lucide-react';
 import { ConnectionsManager } from '@/components/Connection/ConnectionManager';
-import { ChatSystem } from '@/components/Chat/ChatSystem';
+
 import { useNavigate } from 'react-router-dom';
 import { useGetProfile } from '@/hooks/profile/useGetProfile';
 import { useAppStore } from '@/store';
 import { useSendConnection } from '@/hooks/connection/useSendConnection';
 import { useGetSuggestedRequests } from '@/hooks/connection/useGetSuggestedRequests';
 import { useSignout } from '@/hooks/useAuth/useSignout';
+import ChatSystem from '@/components/Chat/ChatSystem';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
