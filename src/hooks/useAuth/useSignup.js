@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 export const useSignup = () => {
   const queryClient = useQueryClient();
-    const setUser = useAppStore((state)=> state.setUser);
+   const setAuth = useAppStore((state) => state.setAuth);
 
   return useMutation({
     mutationKey: ['auth', 'signup'],
@@ -17,13 +17,15 @@ export const useSignup = () => {
 
     onSuccess: (data) => {
       try {
-        const user = data?.data?.user; // assuming API returns { user, token }
+        const response = data?.data;
+        const user = response?.user;
+        const accessToken = response?.accessToken;
 
         console.log('user signed up successfully:', data?.data);
-        setUser(data?.data);
 
-        if (user) {
-          // Update Zustand store
+        if (user && accessToken) {
+          // ✅ Save user + token in Zustand store
+          setAuth({ user, accessToken });
 
           // Invalidate auth-related queries
           queryClient.invalidateQueries({ queryKey: ['auth'] });
