@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import { createAuthSlice } from './slices/authSlice';
@@ -5,8 +6,7 @@ import { createUserSlice } from './slices/userSlice';
 import { createDevToolsConfig } from './middleware/devtoolsConfig';
 import { AuthStatus } from './types';
 
-
-// 🔑 Initial state for reset
+// 🔑 Initial state (used for reset)
 const initialState = {
   user: null,
   authStatus: AuthStatus.UNAUTHENTICATED,
@@ -22,7 +22,7 @@ const initialState = {
 const persistConfig = {
   name: 'app-store',
 
-  // Only persist the necessary parts of state
+  // Only persist specific parts of state
   partialize: (state) => ({
     user: state.user,
     authStatus: state.authStatus,
@@ -41,7 +41,7 @@ const persistConfig = {
   },
 };
 
-// 🏪 Main Zustand Store
+// 🏪 Main Zustand Store with slices
 export const useAppStore = create(
   devtools(
     persist(
@@ -53,7 +53,9 @@ export const useAppStore = create(
         ...createUserSlice(set, get),
 
         // Global reset (logout etc.)
-        resetStore: () => set(initialState, true, 'store/reset'),
+        resetStore: () => {
+          set(initialState, true, 'store/reset');
+        },
       }),
       persistConfig
     ),
@@ -61,8 +63,7 @@ export const useAppStore = create(
   )
 );
 
-
-// ✅ Selectors (auto-updating)
+// ✅ Selectors (memoized)
 export const useAuthSelector = () =>
   useAppStore((state) => ({
     user: state.user,

@@ -3,17 +3,19 @@ import { AuthStatus } from '../types';
 export const createAuthSlice = (set, get) => ({
   // 🎯 Only store the essential state
   user: null,
+  token: null,
   authStatus: AuthStatus.UNAUTHENTICATED,
 
-  // 🎯 Simple actions - no async logic needed
-  setUser: (user) => {
+  // 🎯 Actions
+  setAuth: ({ user, accessToken }) => {
     set(
       {
         user,
+        token: accessToken,
         authStatus: AuthStatus.AUTHENTICATED,
       },
       false,
-      'auth/setUser'
+      'auth/setAuth'
     );
   },
 
@@ -21,6 +23,7 @@ export const createAuthSlice = (set, get) => ({
     set(
       {
         user: null,
+        token: null,
         authStatus: AuthStatus.UNAUTHENTICATED,
       },
       false,
@@ -44,4 +47,5 @@ export const createAuthSlice = (set, get) => ({
   // 🎯 Computed Values/Getters
   isAuthenticated: () => get().authStatus === AuthStatus.AUTHENTICATED,
   getCurrentUser: () => get().user,
+  getToken: () => get().token,
 });
