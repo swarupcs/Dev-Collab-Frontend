@@ -277,7 +277,7 @@ export default function DashboardPage() {
     signout(undefined, {
       onSuccess: () => {
         // Navigate immediately to prevent other API calls
-        navigate('/signin', { replace: true });
+        // navigate('/signin', { replace: true });
 
         // Optional: Reload the page to ensure clean state
         // window.location.href = '/signin';
@@ -285,7 +285,7 @@ export default function DashboardPage() {
       onError: (error) => {
         console.error('Logout failed:', error);
         // Still navigate even if logout API fails (client-side cleanup)
-        navigate('/signin', { replace: true });
+        // navigate('/signin', { replace: true });
       },
     });
   };
