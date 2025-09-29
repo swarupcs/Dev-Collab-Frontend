@@ -186,6 +186,9 @@ export function ChatSystem() {
     return time
   }
 
+
+  
+
   return (
     <div className="grid gap-6 lg:grid-cols-3 h-[600px]">
       {/* Chat List */}
