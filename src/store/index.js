@@ -3,7 +3,20 @@ import { persist, devtools } from 'zustand/middleware';
 import { createAuthSlice } from './slices/authSlice';
 import { createUserSlice } from './slices/userSlice';
 import { createDevToolsConfig } from './middleware/devtoolsConfig';
+import { AuthStatus } from './types';
 
+
+// 🔑 Initial state for reset
+const initialState = {
+  user: null,
+  authStatus: AuthStatus.UNAUTHENTICATED,
+  userProfile: null,
+  preferences: {
+    theme: 'light',
+    language: 'en',
+    notifications: true,
+  },
+};
 
 // 🔑 Storage configuration
 const persistConfig = {
@@ -17,19 +30,9 @@ const persistConfig = {
     preferences: state.preferences,
   }),
 
-  // Handle rehydration (when Zustand loads from storage)
+  // Handle rehydration
   onRehydrateStorage: () => (state) => {
     console.log('🔄 Store hydration complete:', state ? 'success' : 'failed');
-
-    // // Optional: Check token consistency
-    // if (state?.user && state.authStatus === 'AUTHENTICATED') {
-    //   const token = localStorage.getItem('authToken');
-    //   if (!token) {
-    //     console.warn('⚠️ Authenticated but no token found in localStorage');
-    //     // Here you could auto-logout or refresh token
-    //     // get().clearUser();
-    //   }
-    // }
   },
 
   // Handle persistence errors
@@ -46,8 +49,11 @@ export const useAppStore = create(
         // Auth slice
         ...createAuthSlice(set, get),
 
-        // User slice (profile, preferences, etc.)
+        // User slice
         ...createUserSlice(set, get),
+
+        // Global reset (logout etc.)
+        resetStore: () => set(initialState, true, 'store/reset'),
       }),
       persistConfig
     ),
@@ -55,13 +61,14 @@ export const useAppStore = create(
   )
 );
 
-// ✅ Selectors (good practice for cleaner usage)
+
+// ✅ Selectors (auto-updating)
 export const useAuthSelector = () =>
   useAppStore((state) => ({
     user: state.user,
     authStatus: state.authStatus,
-    isAuthenticated: state.isAuthenticated(),
-    getCurrentUser: state.getCurrentUser(),
+    isAuthenticated: state.authStatus === AuthStatus.AUTHENTICATED,
+    getCurrentUser: state.user,
   }));
 
 export const useUserSelector = () =>

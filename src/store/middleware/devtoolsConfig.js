@@ -11,8 +11,8 @@ export const createDevToolsConfig = (name, enabled = true) => {
     serialize: {
       options: {
         undefined: true,
-        function: (fn) => `[Function: ${fn.name || 'anonymous'}]`,
-        symbol: (sym) => `[Symbol: ${sym.toString()}]`,
+        // function: (fn) => `[Function: ${fn.name || 'anonymous'}]`,
+        // symbol: (sym) => `[Symbol: ${sym.toString()}]`,
         date: true,
         error: true,
         regex: true,
