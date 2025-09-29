@@ -1,10 +1,12 @@
 import { authService } from '@/apis/auth/authService';
+import { useAppStore } from '@/store';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export const useSignin = () => {
   const queryClient = useQueryClient();
+  const setUser = useAppStore((state)=> state.setUser);
 
   return useMutation({
     mutationKey: ['auth', 'signin'],
@@ -17,7 +19,8 @@ export const useSignin = () => {
       try {
         const user = data?.data?.user; // assuming API returns { user, token }
 
-        console.log('user signed in successfully:', data?.data?.user);
+        console.log('user signed in successfully:', data?.data);
+        setUser(data?.data);
 
         if (user) {
           // Update Zustand store
