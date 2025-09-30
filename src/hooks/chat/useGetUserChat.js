@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useSocket } from "../socket/useSocket";
-import { chatKeys } from "@/utils/chatKeys";
-import { chatService } from "@/apis/chat/chatService";
-import { useEffect } from "react";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSocket } from '../socket/useSocket';
+import { chatKeys } from '@/utils/chatKeys';
+import { chatService } from '@/apis/chat/chatService';
+import { useEffect } from 'react';
 
 export const useGetUserChat = () => {
   const queryClient = useQueryClient();
@@ -11,88 +11,75 @@ export const useGetUserChat = () => {
   const query = useQuery({
     queryKey: chatKeys.lists(),
     queryFn: chatService.getUserChat,
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 30000,
     refetchOnWindowFocus: true,
-    refetchInterval: false, // Don't poll, rely on real-time updates
+    refetchInterval: false,
   });
 
   // Real-time updates via Socket.IO
   useEffect(() => {
     if (!socket) return;
 
-    // When a new message arrives
-    const handleNewMessage = (data) => {
+    // 🔹 Handle incoming messages
+    const handleReceiveMessage = (data) => {
       queryClient.setQueryData(chatKeys.lists(), (oldData) => {
         if (!oldData) return oldData;
 
-        const { message, chatId, sender } = data;
-        const chats = oldData.data.chats;
+        const { chatId, text, createdAt, _id } = data;
+        const chats = oldData.data.chats || [];
 
-        // Find existing chat
         const existingChatIndex = chats.findIndex(
           (chat) => chat._id === chatId
         );
 
         if (existingChatIndex !== -1) {
-          // Update existing chat
           const updatedChats = [...chats];
           const existingChat = updatedChats[existingChatIndex];
 
           updatedChats[existingChatIndex] = {
             ...existingChat,
-            lastMessage: message,
-            updatedAt: message.createdAt,
-            unreadCount: existingChat.unreadCount + 1,
+            lastMessage: { _id, text, createdAt },
+            lastActivity: createdAt,
+            unreadCount: (existingChat.unreadCount || 0) + 1,
           };
 
-          // Move to top
-          const [movedChat] = updatedChats.splice(existingChatIndex, 1);
-          updatedChats.unshift(movedChat);
+          // Move updated chat to top
+          const [moved] = updatedChats.splice(existingChatIndex, 1);
+          updatedChats.unshift(moved);
 
           return { ...oldData, data: { chats: updatedChats } };
         } else {
-          // New chat - refetch to get full chat data
+          // Unknown chat → refetch
           queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
           return oldData;
         }
       });
 
-      // Update unread count
       queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() });
     };
 
-    // When messages are read
-    const handleMessagesRead = (data) => {
+    // 🔹 Handle read receipts
+    const handleMessagesRead = ({ chatId }) => {
       queryClient.setQueryData(chatKeys.lists(), (oldData) => {
         if (!oldData) return oldData;
+        const chats = oldData.data.chats || [];
 
-        const { readBy } = data;
-        const chats = oldData.data.chats;
+        const updatedChats = chats.map((chat) =>
+          chat._id === chatId ? { ...chat, unreadCount: 0 } : chat
+        );
 
-        const updatedChats = chats.map((chat) => {
-          if (chat.otherParticipant?._id === readBy) {
-            return { ...chat, unreadCount: 0 };
-          }
-          return chat;
-        });
-
-        return {
-          ...oldData,
-          data: { chats: updatedChats },
-        };
+        return { ...oldData, data: { chats: updatedChats } };
       });
     };
 
-    // When message is deleted
-    const handleMessageDeleted = (data) => {
-      const { messageId } = data;
-
+    // 🔹 Handle deleted messages
+    const handleMessageDeleted = ({ chatId, messageId }) => {
       queryClient.setQueryData(chatKeys.lists(), (oldData) => {
         if (!oldData) return oldData;
+        const chats = oldData.data.chats || [];
 
-        const chats = oldData.data.chats;
         const updatedChats = chats.map((chat) => {
-          if (chat.lastMessage?._id === messageId) {
+          if (chat._id === chatId && chat.lastMessage?._id === messageId) {
             return {
               ...chat,
               lastMessage: { ...chat.lastMessage, text: 'Message deleted' },
@@ -105,17 +92,17 @@ export const useGetUserChat = () => {
       });
     };
 
-    socket.on('newMessage', handleNewMessage);
-    socket.on('messagesRead', handleMessagesRead);
-    socket.on('messageDeleted', handleMessageDeleted);
+    // ✅ Align with backend event names
+    socket.on('receive_message', handleReceiveMessage);
+    socket.on('messages_read', handleMessagesRead);
+    socket.on('message_deleted', handleMessageDeleted);
 
     return () => {
-      socket.off('newMessage', handleNewMessage);
-      socket.off('messagesRead', handleMessagesRead);
-      socket.off('messageDeleted', handleMessageDeleted);
+      socket.off('receive_message', handleReceiveMessage);
+      socket.off('messages_read', handleMessagesRead);
+      socket.off('message_deleted', handleMessageDeleted);
     };
   }, [socket, queryClient]);
 
-  // ✅ Return query object so component can use data, isLoading, error
   return query;
 };
