@@ -1,118 +1,101 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  MessageSquare,
-  Search,
-  Send,
-  Paperclip,
-  Code,
-  Smile,
-  Phone,
-  Video,
-  Info,
-  Trash2,
-  Edit2,
-  Check,
-  X,
-  RefreshCw,
-  AlertCircle,
-} from 'lucide-react';
+import { MessageSquare, Search, Send, RefreshCw } from 'lucide-react';
 import { useGetUserChat } from '@/hooks/chat/useGetUserChat';
 import { useSocket } from '@/hooks/socket/useSocket';
- // ✅ FIX
+import { useAppStore } from '@/store';
+import axiosInstance from '@/config/axiosConfig';
 
 export default function ChatSystem() {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
-  const [editingMessageId, setEditingMessageId] = useState(null);
-  const [editText, setEditText] = useState('');
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
   const { data: userChat } = useGetUserChat();
   const userChatDetails = userChat?.data?.chats || [];
 
+  const socket = useSocket();
+  const currentUser = useAppStore((s) => s.getCurrentUser());
+  const currentUserId = currentUser?._id;
+
+  // Auto-scroll
+
+  // ✅ derive selected chat
   const selectedChat = userChatDetails.find(
     (chat) => chat._id === selectedChatId
   );
-
-  const socket = useSocket(); // ✅ FIX
-  const currentUserId = socket?.auth?.userId || null; // adjust depending on how you store user
-
-  // ✅ Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // ✅ Socket event listeners
+  // Socket listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !currentUserId) return;
 
-    // Register user
     socket.emit('register', currentUserId);
 
-    // Incoming messages
-    socket.on('receive_message', (msg) => {
-      setChatMessages((prev) => [...prev, formatMessage(msg)]);
-    });
+    const handleReceive = (msg) => {
+      if (msg.chatId === selectedChatId) {
+        setChatMessages((prev) => [...prev, formatMessage(msg)]);
+      }
+    };
 
-    // Sent confirmation
-    socket.on('message_sent', (msg) => {
-      setChatMessages((prev) => {
-        // replace temp message with actual
-        return prev.map((m) =>
-          m.id.startsWith('temp-') ? formatMessage(msg) : m
-        );
-      });
-    });
+    const handleSent = (msg) => {
+      setChatMessages((prev) =>
+        prev.map((m) => (m.id.startsWith('temp-') ? formatMessage(msg) : m))
+      );
+    };
+
+    socket.on('receive_message', handleReceive);
+    socket.on('message_sent', handleSent);
 
     return () => {
-      socket.off('receive_message');
-      socket.off('message_sent');
+      socket.off('receive_message', handleReceive);
+      socket.off('message_sent', handleSent);
     };
-  }, [socket, currentUserId]);
+  }, [socket, currentUserId, selectedChatId]);
 
-  // ✅ Format message from backend
   const formatMessage = (msg) => ({
     id: msg._id,
-    sender: msg.senderId?.username || 'Unknown',
     senderId: msg.senderId?._id || msg.senderId,
     message: msg.text,
     time: new Date(msg.createdAt).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
     }),
-    isMe: msg.senderId?._id === currentUserId,
-    type: msg.messageType || 'text',
-    edited: !!msg.editedAt,
+    isMe:
+      (msg.senderId?._id || msg.senderId)?.toString() ===
+      currentUserId?.toString(),
   });
 
-  // ✅ Send message
+  // Fetch chat history
+  const loadMessages = async (chatId) => {
+    try {
+      setIsLoadingMessages(true);
+      const res = await axiosInstance.get(`/chat/${chatId}/messages?limit=50`);
+      const messages = res.data?.data?.messages || [];
+      setChatMessages(messages.map(formatMessage));
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+  // Send message
   const handleSendMessage = () => {
     if (!message.trim() || !selectedChatId || !socket) return;
 
-    const receiverId = selectedChat.otherParticipant._id;
-
-    // Optimistic UI
     const tempMessage = {
       id: 'temp-' + Date.now(),
-      sender: 'You',
       senderId: currentUserId,
       message: message.trim(),
       time: new Date().toLocaleTimeString('en-US', {
@@ -120,16 +103,17 @@ export default function ChatSystem() {
         minute: '2-digit',
       }),
       isMe: true,
-      type: 'text',
-      edited: false,
     };
+
     setChatMessages((prev) => [...prev, tempMessage]);
     setMessage('');
 
-    // Emit to server
+    const chat = userChatDetails.find((c) => c._id === selectedChatId);
+    const receiver = chat.participants.find((p) => p._id !== currentUserId);
+
     socket.emit('send_message', {
       senderId: currentUserId,
-      receiverId,
+      receiverId: receiver._id,
       text: tempMessage.message,
     });
   };
@@ -143,8 +127,7 @@ export default function ChatSystem() {
 
   const handleChatSelect = (chatId) => {
     setSelectedChatId(chatId);
-    setError(null);
-    // Optionally fetch chat history via API here
+    loadMessages(chatId);
   };
 
   return (
@@ -173,33 +156,40 @@ export default function ChatSystem() {
         </CardHeader>
         <CardContent className='p-0'>
           <ScrollArea className='h-[500px]'>
-            {userChatDetails.map((chat) => (
-              <div
-                key={chat._id}
-                className={`p-3 cursor-pointer ${
-                  selectedChatId === chat._id
-                    ? 'bg-accent'
-                    : 'hover:bg-accent/50'
-                }`}
-                onClick={() => handleChatSelect(chat._id)}
-              >
-                <div className='flex items-center space-x-3'>
-                  <Avatar className='h-10 w-10'>
-                    <AvatarImage src={chat.otherParticipant?.photoUrl} />
-                    <AvatarFallback>??</AvatarFallback>
-                  </Avatar>
-                  <div className='flex-1'>
-                    <h4 className='font-medium'>
-                      {chat.otherParticipant?.firstName || 'Unknown'}
-                    </h4>
-                    <p className='text-sm text-muted-foreground truncate'>
-                      {chat.lastMessage?.text || 'No messages yet'}
-                    </p>
+            {userChatDetails.map((chat) => {
+              const other = chat.participants.find(
+                (p) => p._id !== currentUserId
+              );
+              return (
+                <div
+                  key={chat._id}
+                  className={`p-3 cursor-pointer ${
+                    selectedChatId === chat._id
+                      ? 'bg-accent'
+                      : 'hover:bg-accent/50'
+                  }`}
+                  onClick={() => handleChatSelect(chat._id)}
+                >
+                  <div className='flex items-center space-x-3'>
+                    <Avatar className='h-10 w-10'>
+                      <AvatarImage src={other?.photoUrl} />
+                      <AvatarFallback>
+                        {other?.firstName?.[0] || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className='flex-1'>
+                      <h4 className='font-medium'>
+                        {other?.firstName || 'Unknown'}
+                      </h4>
+                      <p className='text-sm text-muted-foreground truncate'>
+                        {chat.lastMessage?.text || 'No messages yet'}
+                      </p>
+                    </div>
+                    {chat.unreadCount > 0 && <Badge>{chat.unreadCount}</Badge>}
                   </div>
-                  {chat.unreadCount > 0 && <Badge>{chat.unreadCount}</Badge>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </ScrollArea>
         </CardContent>
       </Card>
@@ -208,26 +198,37 @@ export default function ChatSystem() {
       <Card className='lg:col-span-2'>
         {selectedChat ? (
           <>
-            <CardHeader>{selectedChat.otherParticipant?.firstName}</CardHeader>
+            <CardHeader>
+              {
+                selectedChat.participants.find((p) => p._id !== currentUserId)
+                  ?.firstName
+              }
+            </CardHeader>
             <CardContent className='p-0'>
               <ScrollArea className='h-[400px] p-4'>
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      msg.isMe ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
+                {isLoadingMessages ? (
+                  <p className='text-center text-muted-foreground'>
+                    Loading...
+                  </p>
+                ) : (
+                  chatMessages.map((msg) => (
                     <div
-                      className={`p-3 rounded-lg ${
-                        msg.isMe ? 'bg-primary text-white' : 'bg-muted'
+                      key={msg.id}
+                      className={`flex ${
+                        msg.isMe ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      <p>{msg.message}</p>
-                      <small>{msg.time}</small>
+                      <div
+                        className={`p-3 rounded-lg ${
+                          msg.isMe ? 'bg-primary text-white' : 'bg-muted'
+                        }`}
+                      >
+                        <p>{msg.message}</p>
+                        <small>{msg.time}</small>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
                 <div ref={messagesEndRef} />
               </ScrollArea>
 
