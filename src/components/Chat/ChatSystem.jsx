@@ -28,43 +28,63 @@ export default function ChatSystem() {
   const currentUser = useAppStore((s) => s.getCurrentUser());
   const currentUserId = currentUser?._id;
 
-  // Auto-scroll
+  console.log("socket", socket);
+
+  useEffect(() => {
+    if (!socket) return;
+    console.log('socket instance:', socket);
+  }, [socket]);
 
   // ✅ derive selected chat
   const selectedChat = userChatDetails.find(
     (chat) => chat._id === selectedChatId
   );
+
+  // ✅ Auto-scroll when messages or chat change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+  }, [chatMessages, selectedChatId]);
 
-  // Socket listeners
+  // ✅ Register user once after connect
   useEffect(() => {
-    if (!socket || !currentUserId) return;
+    if (socket && currentUserId) {
+      socket.emit('register', currentUserId);
+    }
+  }, [socket, currentUserId]);
 
-    socket.emit('register', currentUserId);
+  // ✅ Socket listeners for receive + sent
+useEffect(() => {
+  if (!socket || !currentUserId) return;
 
-    const handleReceive = (msg) => {
-      if (msg.chatId === selectedChatId) {
-        setChatMessages((prev) => [...prev, formatMessage(msg)]);
-      }
-    };
+  const handleReceive = (msg) => {
+    if (msg.chatId === selectedChatId) {
+      setChatMessages((prev) => [...prev, formatMessage(msg)]);
+    }
+  };
 
-    const handleSent = (msg) => {
-      setChatMessages((prev) =>
-        prev.map((m) => (m.id.startsWith('temp-') ? formatMessage(msg) : m))
-      );
-    };
+  const handleSent = (msg) => {
+    setChatMessages((prev) =>
+      prev.map((m) =>
+        m.id.startsWith('temp-') &&
+        m.message === msg.text &&
+        m.senderId === currentUserId
+          ? formatMessage(msg)
+          : m
+      )
+    );
+  };
 
-    socket.on('receive_message', handleReceive);
-    socket.on('message_sent', handleSent);
+  socket.on('receive_message', handleReceive);
+  socket.on('message_sent', handleSent);
 
-    return () => {
-      socket.off('receive_message', handleReceive);
-      socket.off('message_sent', handleSent);
-    };
-  }, [socket, currentUserId, selectedChatId]);
+  return () => {
+    socket.off('receive_message', handleReceive);
+    socket.off('message_sent', handleSent);
+  };
+}, [socket, currentUserId, selectedChatId]);
 
+
+  // ✅ Format backend message
   const formatMessage = (msg) => ({
     id: msg._id,
     senderId: msg.senderId?._id || msg.senderId,
@@ -78,7 +98,7 @@ export default function ChatSystem() {
       currentUserId?.toString(),
   });
 
-  // Fetch chat history
+  // ✅ Fetch chat history via REST
   const loadMessages = async (chatId) => {
     try {
       setIsLoadingMessages(true);
@@ -90,7 +110,7 @@ export default function ChatSystem() {
     }
   };
 
-  // Send message
+  // ✅ Send message
   const handleSendMessage = () => {
     if (!message.trim() || !selectedChatId || !socket) return;
 
@@ -111,6 +131,7 @@ export default function ChatSystem() {
     const chat = userChatDetails.find((c) => c._id === selectedChatId);
     const receiver = chat.participants.find((p) => p._id !== currentUserId);
 
+    // ✅ match backend
     socket.emit('send_message', {
       senderId: currentUserId,
       receiverId: receiver._id,
@@ -129,6 +150,16 @@ export default function ChatSystem() {
     setSelectedChatId(chatId);
     loadMessages(chatId);
   };
+
+  // ✅ Filter chats by search
+  const filteredChats = userChatDetails.filter((chat) => {
+    if (!searchQuery) return true;
+    const other = chat.participants.find((p) => p._id !== currentUserId);
+    const fullName = `${other?.firstName || ''} ${
+      other?.lastName || ''
+    }`.toLowerCase();
+    return fullName.includes(searchQuery.toLowerCase());
+  });
 
   return (
     <div className='grid gap-6 lg:grid-cols-3 h-[600px]'>
@@ -156,7 +187,7 @@ export default function ChatSystem() {
         </CardHeader>
         <CardContent className='p-0'>
           <ScrollArea className='h-[500px]'>
-            {userChatDetails.map((chat) => {
+            {filteredChats.map((chat) => {
               const other = chat.participants.find(
                 (p) => p._id !== currentUserId
               );

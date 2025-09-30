@@ -1,51 +1,58 @@
-import { useAppStore } from "@/store";
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
-
-let socket = null;
+// hooks/socket/useSocket.js
+import { useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
+import { useAppStore } from '@/store';
 
 export const useSocket = () => {
+  const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
 
-
-
   const { getCurrentUser, getToken } = useAppStore();
-
   const user = getCurrentUser();
   const token = getToken();
+
+  console.log("user", user);
+  console.log("token", token);
 
   useEffect(() => {
     if (!user || !token) return;
 
-    // Initialize socket only once
-    if (!socket) {
-      socket = io(import.meta.env.VITE_BACKEND_URL1 || 'http://localhost:8080/api', {
+    console.log('🔌 Initializing socket...');
+
+    const newSocket = io(
+      import.meta.env.VITE_BACKEND_URL1 || 'http://localhost:8080',
+      {
         auth: { token },
         transports: ['websocket'],
-      });
+      }
+    );
 
-      socket.on('connect', () => {
-        console.log('Socket connected');
-        setIsConnected(true);
-      });
+    newSocket.on('connect', () => {
+      console.log('✅ Socket connected:', newSocket.id);
+      setIsConnected(true);
 
-      socket.on('disconnect', () => {
-        console.log('Socket disconnected');
-        setIsConnected(false);
-      });
+      // Register user on connect
+      newSocket.emit('register', user._id);
+    });
 
-      socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
-      });
-    }
+    newSocket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+      setIsConnected(false);
+    });
 
+    newSocket.on('connect_error', (err) => {
+      console.error('❌ Socket connection error:', err.message);
+    });
+
+    // Save socket in state
+    setSocket(newSocket);
+
+    // Cleanup if user logs out / component unmounts
     return () => {
-      // Don't disconnect on unmount, keep connection alive
-      // Only disconnect when user logs out
+      console.log('🔌 Closing socket...');
+      newSocket.disconnect();
     };
-  }, [user, token]);
+  }, [user?._id, token]);
 
   return socket;
-
-
-}
+};
