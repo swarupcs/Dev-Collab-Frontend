@@ -27,7 +27,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-
 import {
   Bell,
   Settings,
@@ -50,19 +49,21 @@ import {
   Calendar,
 } from 'lucide-react';
 import { ConnectionsManager } from '@/components/Connection/ConnectionManager';
-import { ChatSystem } from '@/components/Chat/ChatSystem';
+
 import { useNavigate } from 'react-router-dom';
 import { useGetProfile } from '@/hooks/profile/useGetProfile';
 import { useAppStore } from '@/store';
 import { useSendConnection } from '@/hooks/connection/useSendConnection';
 import { useGetSuggestedRequests } from '@/hooks/connection/useGetSuggestedRequests';
+import { useSignout } from '@/hooks/useAuth/useSignout';
+import ChatSystem from '@/components/Chat/ChatSystem';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [activityFilter, setActivityFilter] = useState('all');
   const [activitySearch, setActivitySearch] = useState('');
 
-   const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const {
     data: profileData,
@@ -73,12 +74,16 @@ export default function DashboardPage() {
     refetch,
   } = useGetProfile();
 
- const { data, isLoading: isLoadingSuggested, isError: isErrorSuggested, error: errorSuggested } = useGetSuggestedRequests();
+  const {
+    data,
+    isLoading: isLoadingSuggested,
+    isError: isErrorSuggested,
+    error: errorSuggested,
+  } = useGetSuggestedRequests();
 
- console.log('data', data?.data?.suggestedUsers);
+  console.log('data', data?.data?.suggestedUsers);
 
- const suggestedRequestData = data?.data?.suggestedUsers || [];
-
+  const suggestedRequestData = data?.data?.suggestedUsers || [];
 
   // console.log("profileData", profileData);
   // console.log("isLoading", isLoading);
@@ -261,10 +266,34 @@ export default function DashboardPage() {
     }
   };
 
-  const handleProfileClick = () => {
+  const {
+    mutate: signout,
+    isLoading: isSigningOut,
+    error: signoutError,
+    isSuccess,
+    data: signoutData,
+  } = useSignout();
 
+  const handleLogout = () => {
+    signout(undefined, {
+      onSuccess: () => {
+        // Navigate immediately to prevent other API calls
+        // navigate('/signin', { replace: true });
+
+        // Optional: Reload the page to ensure clean state
+        // window.location.href = '/signin';
+      },
+      onError: (error) => {
+        console.error('Logout failed:', error);
+        // Still navigate even if logout API fails (client-side cleanup)
+        // navigate('/signin', { replace: true });
+      },
+    });
+  };
+
+  const handleProfileClick = () => {
     navigate('/profile');
-  }
+  };
 
   return (
     <div className='min-h-screen bg-background'>
@@ -326,7 +355,10 @@ export default function DashboardPage() {
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className='text-red-600'>
+                  <DropdownMenuItem
+                    className='text-red-600'
+                    onClick={handleLogout}
+                  >
                     <LogOut className='mr-2 h-4 w-4' />
                     <span>Log out</span>
                   </DropdownMenuItem>

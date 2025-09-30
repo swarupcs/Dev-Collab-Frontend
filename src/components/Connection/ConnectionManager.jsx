@@ -1,154 +1,45 @@
-
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, UserPlus, UserCheck, UserX, Clock, MapPin, Star, Github, Linkedin, Globe, Calendar } from "lucide-react"
-import { useSendConnection } from "@/hooks/connection/useSendConnection"
-import { useGetPendingConnectionRequests } from "@/hooks/connection/getPendingConnectionRequests"
-import { useReviewConnectionRequest } from "@/hooks/connection/useReviewConnectionRequest"
-import { useGetMyConnections } from "@/hooks/connection/getMyConnections"
-
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Search,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Clock,
+  MapPin,
+  Star,
+  Github,
+  Linkedin,
+  Globe,
+  Calendar,
+} from 'lucide-react';
+import { useSendConnection } from '@/hooks/connection/useSendConnection';
+import { useGetPendingConnectionRequests } from '@/hooks/connection/getPendingConnectionRequests';
+import { useReviewConnectionRequest } from '@/hooks/connection/useReviewConnectionRequest';
+import { useGetMyConnections } from '@/hooks/connection/getMyConnections';
 
 export function ConnectionsManager({ suggestedRequestData }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [skillFilter, setSkillFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
-
-  // console.log('suggestedRequestData', suggestedRequestData);
-
-  // Use the existing mutation hook with user removal callback
-
-  // Mock data for developer discovery
-  const suggestedDevelopers = [
-    {
-      id: '1',
-      name: 'Maria Garcia',
-      username: '@mariagarcia',
-      avatar: '/developer-woman.png',
-      skills: ['React', 'TypeScript', 'GraphQL', 'AWS'],
-      location: 'San Francisco, CA',
-      bio: 'Full-stack developer passionate about building scalable web applications',
-      experience: '5+ years',
-      rating: 4.8,
-      projects: 23,
-      connections: 156,
-      status: 'online',
-      github: 'mariagarcia',
-      linkedin: 'maria-garcia-dev',
-    },
-    {
-      id: '2',
-      name: 'James Thompson',
-      username: '@jamesthompson',
-      avatar: '/developer-man.png',
-      skills: ['Python', 'Django', 'PostgreSQL', 'Docker'],
-      location: 'New York, NY',
-      bio: 'Backend engineer with expertise in distributed systems and microservices',
-      experience: '7+ years',
-      rating: 4.9,
-      projects: 31,
-      connections: 203,
-      status: 'offline',
-      github: 'jamesthompson',
-      website: 'jamesthompson.dev',
-    },
-    {
-      id: '3',
-      name: 'Priya Patel',
-      username: '@priyapatel',
-      avatar: '/developer-woman-2.jpg',
-      skills: ['Flutter', 'Dart', 'Firebase', 'iOS'],
-      location: 'London, UK',
-      bio: 'Mobile app developer creating beautiful cross-platform experiences',
-      experience: '4+ years',
-      rating: 4.7,
-      projects: 18,
-      connections: 89,
-      status: 'online',
-      github: 'priyapatel',
-      linkedin: 'priya-patel-mobile',
-    },
-    {
-      id: '4',
-      name: 'Carlos Rodriguez',
-      username: '@carlosrodriguez',
-      avatar: '/developer-man-2.jpg',
-      skills: ['Vue.js', 'Nuxt.js', 'Node.js', 'MongoDB'],
-      location: 'Barcelona, Spain',
-      bio: 'Frontend specialist with a passion for user experience and performance',
-      experience: '6+ years',
-      rating: 4.6,
-      projects: 27,
-      connections: 134,
-      status: 'online',
-      linkedin: 'carlos-rodriguez-frontend',
-      website: 'carlosdev.es',
-    },
-  ];
-
-  const connectionRequests = [
-    {
-      id: '1',
-      name: 'Sarah Chen',
-      username: '@sarahdev',
-      avatar: '/developer-woman-3.jpg',
-      skills: ['React', 'TypeScript', 'Node.js'],
-      mutualConnections: 5,
-      requestDate: '2 days ago',
-      message:
-        'Hi! I saw your work on the React component library. Would love to connect and discuss best practices!',
-    },
-    {
-      id: '2',
-      name: 'Alex Rodriguez',
-      username: '@alexcodes',
-      avatar: '/user-profile-illustration.png',
-      skills: ['Python', 'Django', 'PostgreSQL'],
-      mutualConnections: 3,
-      requestDate: '1 week ago',
-      message:
-        "Hello! I'm working on a similar project and would appreciate your insights.",
-    },
-  ];
-
-  const myConnections = [
-    {
-      id: '1',
-      name: 'Emma Wilson',
-      username: '@emmawilson',
-      avatar: '/developer-woman.png',
-      skills: ['Vue.js', 'Laravel', 'MySQL'],
-      location: 'Toronto, Canada',
-      bio: 'Full-stack developer and open source contributor',
-      experience: '5+ years',
-      rating: 4.8,
-      projects: 19,
-      connections: 98,
-      status: 'online',
-      github: 'emmawilson',
-    },
-    {
-      id: '2',
-      name: 'David Kim',
-      username: '@davidkim',
-      avatar: '/developer-man.png',
-      skills: ['Go', 'Docker', 'Kubernetes'],
-      location: 'Seoul, South Korea',
-      bio: 'DevOps engineer specializing in cloud infrastructure',
-      experience: '8+ years',
-      rating: 4.9,
-      projects: 34,
-      connections: 187,
-      status: 'offline',
-      github: 'davidkim',
-      linkedin: 'david-kim-devops',
-    },
-  ];
 
   // Add state to track processed users (connected or ignored)
   const [processedSuggestUsers, setProcessedSuggestUsers] = useState(new Set());
@@ -204,36 +95,37 @@ export function ConnectionsManager({ suggestedRequestData }) {
     refetch,
   } = useGetPendingConnectionRequests();
 
+  console.log('pendingRequests', pendingRequests);
+
   const [pendingRequestData, setPendingRequestData] = useState(
     pendingRequests?.data?.requests || []
   );
+
+  useEffect(() => {
+    if (pendingRequests?.data?.requests) {
+      setPendingRequestData(pendingRequests.data.requests);
+    }
+  }, [pendingRequests]);
 
   console.log('pendingRequestData', pendingRequestData);
 
   const [processedReviewRequests, setProcessedReviewRequests] = useState(
     new Set()
   );
-  const { mutate: reviewMutate, isLoading: reviewIsLoading } =
-    useReviewConnectionRequest({
-      onSuccess: (data, variables) => {
-        // Update pendingRequestData by removing the processed request
-        setPendingRequestData((prevData) =>
-          prevData.filter((request) => request._id !== variables.requestId)
-        );
-      },
-    });
+const { mutate: reviewMutate, isLoading: reviewIsLoading } =
+  useReviewConnectionRequest({
+    onSuccess: (data, variables) => {
+      // Update pendingRequestData by removing the processed request
+      setPendingRequestData((prevData) =>
+        prevData.filter((request) => request._id !== variables.requestId)
+      );
 
-  const handleAcceptRequest = (requestId) => {
-    // console.log('[v0] Accepting connection request:', requestId);
-    reviewMutate({ status: 'accepted', requestId });
-    // Handle accept logic here
-  };
-
-  const handleRejectRequest = (requestId) => {
-    // console.log('[v0] Rejecting connection request:', requestId);
-    reviewMutate({ status: 'rejected', requestId });
-    // Handle reject logic here
-  };
+      // Refetch connections if request was accepted
+      if (variables.status === 'accepted') {
+        refetchUserConnections();
+      }
+    },
+  });
 
   const {
     data: userConnections,
@@ -242,6 +134,17 @@ export function ConnectionsManager({ suggestedRequestData }) {
     isError,
     refetch: refetchUserConnections,
   } = useGetMyConnections();
+
+
+const handleAcceptRequest = (requestId) => {
+  console.log('[v0] Accepting connection request:', requestId);
+  reviewMutate({ status: 'accepted', requestId });
+};
+
+const handleRejectRequest = (requestId) => {
+  console.log('[v0] Rejecting connection request:', requestId);
+  reviewMutate({ status: 'rejected', requestId });
+};
 
   const [userConnectionsData, setUserConnectionsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -264,55 +167,54 @@ export function ConnectionsManager({ suggestedRequestData }) {
         .includes(searchTerm.toLowerCase())
   );
 
-    if (userConnectionsLoading) {
-      return (
-        <TabsContent value='connections' className='space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
-                <UserCheck className='h-5 w-5' />
-                My Network
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className='flex items-center justify-center py-8'>
-                <div className='text-center'>
-                  <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
-                  <p>Loading your connections...</p>
-                </div>
+  if (userConnectionsLoading) {
+    return (
+      <TabsContent value='connections' className='space-y-6'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2'>
+              <UserCheck className='h-5 w-5' />
+              My Network
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='flex items-center justify-center py-8'>
+              <div className='text-center'>
+                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4'></div>
+                <p>Loading your connections...</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      );
-    }
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    );
+  }
 
-      if (isError) {
-        return (
-          <TabsContent value='connections' className='space-y-6'>
-            <Card>
-              <CardHeader>
-                <CardTitle className='flex items-center gap-2'>
-                  <UserCheck className='h-5 w-5' />
-                  My Network
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className='text-center py-8'>
-                  <p className='text-red-500 mb-4'>
-                    Error:{' '}
-                    {userConnectionsError?.message ||
-                      'Failed to load connections'}
-                  </p>
-                  <Button onClick={() => refetchUserConnections()}>
-                    Try Again
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        );
-      }
+  if (isError) {
+    return (
+      <TabsContent value='connections' className='space-y-6'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2'>
+              <UserCheck className='h-5 w-5' />
+              My Network
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='text-center py-8'>
+              <p className='text-red-500 mb-4'>
+                Error:{' '}
+                {userConnectionsError?.message || 'Failed to load connections'}
+              </p>
+              <Button onClick={() => refetchUserConnections()}>
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    );
+  }
 
   // console.log('pendingRequestMutate', pendingRequests);
 

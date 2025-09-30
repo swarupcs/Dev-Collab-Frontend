@@ -15,6 +15,9 @@ export const useReviewConnectionRequest = (options = {}) => {
 
         if (variables.status === 'accepted') {
             toast.success('Connection request accepted successfully!');
+            if (options.refetchConnections) {
+              options.refetchConnections();
+            }
         } else if (variables.status === 'rejected') {
             toast.success('Connection request rejected successfully!');
         }
