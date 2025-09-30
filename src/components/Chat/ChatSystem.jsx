@@ -51,6 +51,7 @@ export default function ChatSystem() {
       socket.emit('register', currentUserId);
     }
   }, [socket, currentUserId]);
+  
 
   // ✅ Socket listeners for receive + sent
 useEffect(() => {
