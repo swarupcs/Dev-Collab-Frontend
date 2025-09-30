@@ -262,9 +262,9 @@ export default function ChatSystem() {
 
   // Handle chat selection
   const handleChatSelect = (chatId) => {
-    // if (onChatSelect) {
-    //   onChatSelect(chatId);
-    // }
+    setSelectedChatId(chatId);
+    setError(null); // Clear any previous errors
+    console.log('selected chat id', chatId);
   };
 
   return (

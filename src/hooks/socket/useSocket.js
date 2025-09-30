@@ -19,7 +19,7 @@ export const useSocket = () => {
 
     // Initialize socket only once
     if (!socket) {
-      socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+      socket = io(import.meta.env.VITE_BACKEND_URL1 || 'http://localhost:8080/api', {
         auth: { token },
         transports: ['websocket'],
       });
