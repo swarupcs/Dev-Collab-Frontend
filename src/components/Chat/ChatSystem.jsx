@@ -28,11 +28,13 @@ export default function ChatSystem() {
   const currentUser = useAppStore((s) => s.getCurrentUser());
   const currentUserId = currentUser?._id;
 
-  console.log("socket", socket);
-
+  // ✅ Debug socket state
   useEffect(() => {
-    if (!socket) return;
-    console.log('socket instance:', socket);
+    console.log('🔍 ChatSystem - Socket state:', {
+      exists: !!socket,
+      connected: socket?.connected,
+      id: socket?.id,
+    });
   }, [socket]);
 
   // ✅ derive selected chat
@@ -45,45 +47,52 @@ export default function ChatSystem() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, selectedChatId]);
 
-  // ✅ Register user once after connect
-  useEffect(() => {
-    if (socket && currentUserId) {
-      socket.emit('register', currentUserId);
-    }
-  }, [socket, currentUserId]);
-  
+  // ❌ REMOVED - No need to register again, useSocket already does it
+  // useEffect(() => {
+  //   if (socket && currentUserId) {
+  //     socket.emit('register', currentUserId);
+  //   }
+  // }, [socket, currentUserId]);
 
   // ✅ Socket listeners for receive + sent
-useEffect(() => {
-  if (!socket || !currentUserId) return;
+  useEffect(() => {
+    if (!socket || !currentUserId) return;
 
-  const handleReceive = (msg) => {
-    if (msg.chatId === selectedChatId) {
-      setChatMessages((prev) => [...prev, formatMessage(msg)]);
-    }
-  };
+    const handleReceive = (msg) => {
+      console.log('📩 Received message:', msg);
+      if (msg.chatId === selectedChatId) {
+        setChatMessages((prev) => [...prev, formatMessage(msg)]);
+      }
+    };
 
-  const handleSent = (msg) => {
-    setChatMessages((prev) =>
-      prev.map((m) =>
-        m.id.startsWith('temp-') &&
-        m.message === msg.text &&
-        m.senderId === currentUserId
-          ? formatMessage(msg)
-          : m
-      )
-    );
-  };
+    const handleSent = (msg) => {
+      console.log('✅ Message sent confirmation:', msg);
+      setChatMessages((prev) =>
+        prev.map((m) =>
+          m.id.startsWith('temp-') &&
+          m.message === msg.text &&
+          m.senderId === currentUserId
+            ? formatMessage(msg)
+            : m
+        )
+      );
+    };
 
-  socket.on('receive_message', handleReceive);
-  socket.on('message_sent', handleSent);
+    const handleError = (error) => {
+      console.error('❌ Socket error:', error);
+    };
 
-  return () => {
-    socket.off('receive_message', handleReceive);
-    socket.off('message_sent', handleSent);
-  };
-}, [socket, currentUserId, selectedChatId]);
+    socket.on('receive_message', handleReceive);
+    socket.on('message_sent', handleSent);
+    socket.on('error_message', handleError);
 
+    // ✅ Cleanup listeners
+    return () => {
+      socket.off('receive_message', handleReceive);
+      socket.off('message_sent', handleSent);
+      socket.off('error_message', handleError);
+    };
+  }, [socket, currentUserId, selectedChatId]);
 
   // ✅ Format backend message
   const formatMessage = (msg) => ({
@@ -106,6 +115,8 @@ useEffect(() => {
       const res = await axiosInstance.get(`/chat/${chatId}/messages?limit=50`);
       const messages = res.data?.data?.messages || [];
       setChatMessages(messages.map(formatMessage));
+    } catch (error) {
+      console.error('❌ Error loading messages:', error);
     } finally {
       setIsLoadingMessages(false);
     }
@@ -113,12 +124,33 @@ useEffect(() => {
 
   // ✅ Send message
   const handleSendMessage = () => {
-    if (!message.trim() || !selectedChatId || !socket) return;
+    const trimmedMessage = message.trim();
+
+    if (!trimmedMessage || !selectedChatId || !socket) {
+      console.log('❌ Cannot send message:', {
+        hasMessage: !!trimmedMessage,
+        hasChat: !!selectedChatId,
+        hasSocket: !!socket,
+      });
+      return;
+    }
+
+    const chat = userChatDetails.find((c) => c._id === selectedChatId);
+    if (!chat) {
+      console.error('❌ Chat not found');
+      return;
+    }
+
+    const receiver = chat.participants.find((p) => p._id !== currentUserId);
+    if (!receiver) {
+      console.error('❌ Receiver not found');
+      return;
+    }
 
     const tempMessage = {
       id: 'temp-' + Date.now(),
       senderId: currentUserId,
-      message: message.trim(),
+      message: trimmedMessage,
       time: new Date().toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
@@ -126,21 +158,25 @@ useEffect(() => {
       isMe: true,
     };
 
+    console.log('📤 Sending message:', {
+      senderId: currentUserId,
+      receiverId: receiver._id,
+      text: trimmedMessage,
+    });
+
+    // Add to UI immediately
     setChatMessages((prev) => [...prev, tempMessage]);
     setMessage('');
 
-    const chat = userChatDetails.find((c) => c._id === selectedChatId);
-    const receiver = chat.participants.find((p) => p._id !== currentUserId);
-
-    // ✅ match backend
+    // Send via socket
     socket.emit('send_message', {
       senderId: currentUserId,
       receiverId: receiver._id,
-      text: tempMessage.message,
+      text: trimmedMessage,
     });
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -246,17 +282,19 @@ useEffect(() => {
                   chatMessages.map((msg) => (
                     <div
                       key={msg.id}
-                      className={`flex ${
+                      className={`flex mb-4 ${
                         msg.isMe ? 'justify-end' : 'justify-start'
                       }`}
                     >
                       <div
-                        className={`p-3 rounded-lg ${
-                          msg.isMe ? 'bg-primary text-white' : 'bg-muted'
+                        className={`max-w-[70%] p-3 rounded-lg ${
+                          msg.isMe
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
                         }`}
                       >
-                        <p>{msg.message}</p>
-                        <small>{msg.time}</small>
+                        <p className='break-words'>{msg.message}</p>
+                        <p className='text-xs opacity-70 mt-1'>{msg.time}</p>
                       </div>
                     </div>
                   ))
@@ -270,10 +308,16 @@ useEffect(() => {
                 <Textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder='Type your message...'
+                  className='min-h-[60px] max-h-[120px]'
+                  rows={2}
                 />
-                <Button onClick={handleSendMessage} disabled={!message.trim()}>
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || !socket}
+                  className='self-end'
+                >
                   <Send className='h-4 w-4' />
                 </Button>
               </div>
@@ -281,7 +325,9 @@ useEffect(() => {
           </>
         ) : (
           <CardContent className='flex items-center justify-center h-full'>
-            <p>Select a chat to start messaging</p>
+            <p className='text-muted-foreground'>
+              Select a chat to start messaging
+            </p>
           </CardContent>
         )}
       </Card>

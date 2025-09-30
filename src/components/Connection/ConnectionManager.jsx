@@ -95,7 +95,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
     refetch,
   } = useGetPendingConnectionRequests();
 
-  console.log('pendingRequests', pendingRequests);
+  // console.log('pendingRequests', pendingRequests);
 
   const [pendingRequestData, setPendingRequestData] = useState(
     pendingRequests?.data?.requests || []
@@ -107,7 +107,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
     }
   }, [pendingRequests]);
 
-  console.log('pendingRequestData', pendingRequestData);
+  // console.log('pendingRequestData', pendingRequestData);
 
   const [processedReviewRequests, setProcessedReviewRequests] = useState(
     new Set()
@@ -137,7 +137,7 @@ const { mutate: reviewMutate, isLoading: reviewIsLoading } =
 
 
 const handleAcceptRequest = (requestId) => {
-  console.log('[v0] Accepting connection request:', requestId);
+  // console.log('[v0] Accepting connection request:', requestId);
   reviewMutate({ status: 'accepted', requestId });
 };
 
@@ -617,7 +617,7 @@ const handleRejectRequest = (requestId) => {
                               variant='outline'
                               onClick={() => {
                                 // Navigate to user profile or handle view profile action
-                                console.log('View profile for:', user._id);
+                                // console.log('View profile for:', user._id);
                               }}
                             >
                               View Profile
