@@ -9,6 +9,7 @@ import { AuthStatus } from './types';
 // 🔑 Initial state (used for reset)
 const initialState = {
   user: null,
+  token: null,
   authStatus: AuthStatus.UNAUTHENTICATED,
   userProfile: null,
   preferences: {
@@ -25,6 +26,7 @@ const persistConfig = {
   // Only persist specific parts of state
   partialize: (state) => ({
     user: state.user,
+    token: state.token,
     authStatus: state.authStatus,
     userProfile: state.userProfile,
     preferences: state.preferences,
@@ -67,6 +69,7 @@ export const useAppStore = create(
 export const useAuthSelector = () =>
   useAppStore((state) => ({
     user: state.user,
+    token: state.token,
     authStatus: state.authStatus,
     isAuthenticated: state.authStatus === AuthStatus.AUTHENTICATED,
     getCurrentUser: state.user,

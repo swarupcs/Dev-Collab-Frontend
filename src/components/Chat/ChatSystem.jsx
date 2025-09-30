@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,6 +28,25 @@ export default function ChatSystem() {
   const currentUser = useAppStore((s) => s.getCurrentUser());
   const currentUserId = currentUser?._id;
 
+  // Add animation styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   // ✅ Debug socket state
   useEffect(() => {
     console.log('🔍 ChatSystem - Socket state:', {
@@ -42,31 +61,83 @@ export default function ChatSystem() {
     (chat) => chat._id === selectedChatId
   );
 
-  // ✅ Auto-scroll when messages or chat change
+  // ✅ Smart auto-scroll - only when new messages arrive or chat changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, selectedChatId]);
+    if (chatMessages.length > 0) {
+      // Small delay to ensure DOM has updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+        });
+      }, 100);
+    }
+  }, [chatMessages.length, selectedChatId]);
 
-  // ❌ REMOVED - No need to register again, useSocket already does it
-  // useEffect(() => {
-  //   if (socket && currentUserId) {
-  //     socket.emit('register', currentUserId);
-  //   }
-  // }, [socket, currentUserId]);
+  // ✅ Format backend message
+  const formatMessage = useCallback(
+    (msg) => ({
+      id: msg._id,
+      senderId: msg.senderId?._id || msg.senderId,
+      message: msg.text,
+      time: new Date(msg.createdAt).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+      isMe:
+        (msg.senderId?._id || msg.senderId)?.toString() ===
+        currentUserId?.toString(),
+    }),
+    [currentUserId]
+  );
 
+  // ✅ Fetch chat history via REST (wrapped in useCallback)
+  const loadMessages = useCallback(
+    async (chatId) => {
+      try {
+        setIsLoadingMessages(true);
+        const res = await axiosInstance.get(
+          `/chat/${chatId}/messages?limit=50`
+        );
+        const messages = res.data?.data?.messages || [];
+        // Sort messages by createdAt to ensure latest is at bottom
+        const sortedMessages = messages.sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
+        setChatMessages(sortedMessages.map(formatMessage));
+      } catch (error) {
+        console.error('❌ Error loading messages:', error);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    },
+    [formatMessage]
+  );
+
+  // ✅ Socket listeners for receive + sent
+  // 🎯 THIS IS WHERE THE MAGIC HAPPENS - loadMessages is called on receive_message
   // ✅ Socket listeners for receive + sent
   useEffect(() => {
     if (!socket || !currentUserId) return;
 
     const handleReceive = (msg) => {
       console.log('📩 Received message:', msg);
+      // ⭐ If message is for the currently selected chat, add it to the messages
       if (msg.chatId === selectedChatId) {
-        setChatMessages((prev) => [...prev, formatMessage(msg)]);
+        const formattedMsg = formatMessage(msg);
+        setChatMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          if (prev.some((m) => m.id === formattedMsg.id)) {
+            return prev;
+          }
+          return [...prev, formattedMsg];
+        });
       }
     };
 
     const handleSent = (msg) => {
       console.log('✅ Message sent confirmation:', msg);
+      // Replace temporary message with the real one from server
       setChatMessages((prev) =>
         prev.map((m) =>
           m.id.startsWith('temp-') &&
@@ -92,35 +163,7 @@ export default function ChatSystem() {
       socket.off('message_sent', handleSent);
       socket.off('error_message', handleError);
     };
-  }, [socket, currentUserId, selectedChatId]);
-
-  // ✅ Format backend message
-  const formatMessage = (msg) => ({
-    id: msg._id,
-    senderId: msg.senderId?._id || msg.senderId,
-    message: msg.text,
-    time: new Date(msg.createdAt).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    }),
-    isMe:
-      (msg.senderId?._id || msg.senderId)?.toString() ===
-      currentUserId?.toString(),
-  });
-
-  // ✅ Fetch chat history via REST
-  const loadMessages = async (chatId) => {
-    try {
-      setIsLoadingMessages(true);
-      const res = await axiosInstance.get(`/chat/${chatId}/messages?limit=50`);
-      const messages = res.data?.data?.messages || [];
-      setChatMessages(messages.map(formatMessage));
-    } catch (error) {
-      console.error('❌ Error loading messages:', error);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  };
+  }, [socket, currentUserId, selectedChatId, formatMessage]);
 
   // ✅ Send message
   const handleSendMessage = () => {
@@ -279,12 +322,17 @@ export default function ChatSystem() {
                     Loading...
                   </p>
                 ) : (
-                  chatMessages.map((msg) => (
+                  chatMessages.map((msg, index) => (
                     <div
                       key={msg.id}
                       className={`flex mb-4 ${
                         msg.isMe ? 'justify-end' : 'justify-start'
-                      }`}
+                      } animate-slideIn`}
+                      style={{
+                        animation: `slideIn 0.3s ease-out ${
+                          index * 0.05
+                        }s both`,
+                      }}
                     >
                       <div
                         className={`max-w-[70%] p-3 rounded-lg ${
