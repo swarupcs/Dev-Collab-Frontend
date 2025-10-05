@@ -279,7 +279,6 @@ export default function DashboardPage() {
       onSuccess: () => {
         // Navigate immediately to prevent other API calls
         // navigate('/signin', { replace: true });
-
         // Optional: Reload the page to ensure clean state
         // window.location.href = '/signin';
       },
@@ -293,6 +292,15 @@ export default function DashboardPage() {
 
   const handleProfileClick = () => {
     navigate('/profile');
+  };
+
+  const [selectedChatUser, setSelectedChatUser] = useState(null);
+
+  // Function to trigger chat tab and select user
+  const handleOpenChatWithUser = (user) => {
+    console.log("user", user);
+    setSelectedChatUser(user);
+    setActiveTab('chat');
   };
 
   return (
@@ -409,7 +417,7 @@ export default function DashboardPage() {
               </CardHeader>
             </Card>
 
-            <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-4'>
+            {/* <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-4'>
               <Card>
                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                   <CardTitle className='text-sm font-medium'>
@@ -544,15 +552,18 @@ export default function DashboardPage() {
                   </Button>
                 </CardContent>
               </Card>
-            </div>
+            </div> */}
           </TabsContent>
 
           <TabsContent value='connections'>
-            <ConnectionsManager suggestedRequestData={suggestedRequestData} />
+            <ConnectionsManager
+              suggestedRequestData={suggestedRequestData}
+              onOpenChat={handleOpenChatWithUser}
+            />
           </TabsContent>
 
           <TabsContent value='chat'>
-            <ChatSystem />
+            <ChatSystem selectedChatUser={selectedChatUser} />
           </TabsContent>
 
           <TabsContent value='activity' className='space-y-6'>

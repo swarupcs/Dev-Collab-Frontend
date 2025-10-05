@@ -13,7 +13,7 @@ import { useSocket } from '@/hooks/socket/useSocket';
 import { useAppStore } from '@/store';
 import axiosInstance from '@/config/axiosConfig';
 
-export default function ChatSystem() {
+export default function ChatSystem({ selectedChatUser }) {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,12 +21,14 @@ export default function ChatSystem() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const { data: userChat } = useGetUserChat();
+  const { data: userChat, refetch: refetchUserChats } = useGetUserChat();
   const userChatDetails = userChat?.data?.chats || [];
 
   const socket = useSocket();
   const currentUser = useAppStore((s) => s.getCurrentUser());
   const currentUserId = currentUser?._id;
+
+  console.log('selectedChatUser ', selectedChatUser);
 
   // Add animation styles
   useEffect(() => {
@@ -57,22 +59,29 @@ export default function ChatSystem() {
   }, [socket]);
 
   // ✅ derive selected chat
-  const selectedChat = userChatDetails.find(
+  let selectedChat = userChatDetails.find(
     (chat) => chat._id === selectedChatId
   );
 
-  // ✅ Smart auto-scroll - only when new messages arrive or chat changes
-  useEffect(() => {
-    if (chatMessages.length > 0) {
-      // Small delay to ensure DOM has updated
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end',
-        });
-      }, 100);
-    }
-  }, [chatMessages.length, selectedChatId]);
+  // 🧠 If no existing chat but a selected user exists, create a temporary chat object
+  if (!selectedChat && selectedChatUser) {
+    selectedChat = {
+      _id: `temp-${selectedChatUser._id}`,
+      participants: [
+        {
+          _id: currentUserId,
+          firstName: currentUser?.firstName,
+          lastName: currentUser?.lastName,
+          photoUrl: currentUser?.photoUrl,
+        },
+        selectedChatUser,
+      ],
+      lastMessage: null,
+      isTemp: true,
+    };
+  }
+
+  console.log('selectedChat', selectedChat);
 
   // ✅ Format backend message
   const formatMessage = useCallback(
@@ -114,6 +123,45 @@ export default function ChatSystem() {
     [formatMessage]
   );
 
+  // 👉 Auto-load chat when a user is clicked in ConnectionsManager
+  useEffect(() => {
+    if (!selectedChatUser) return; // nothing to do if no user clicked
+    console.log('🟢 Received selectedChatUser:', selectedChatUser);
+
+    // Find an existing chat with this user
+    const targetUserId = selectedChatUser._id?.toString();
+    const existingChat = userChatDetails.find((chat) =>
+      chat.participants.some(
+        (p) => p._id?.toString() === selectedChatUser._id?.toString()
+      )
+    );
+
+    if (existingChat) {
+      console.log('✅ Found existing chat, loading messages...');
+      setSelectedChatId(existingChat._id);
+      loadMessages(existingChat._id);
+      if (existingChat._id) loadMessages(existingChat._id);
+    } else {
+      console.log('🆕 No existing chat found, showing empty conversation.');
+      const tempChatId = `temp-${targetUserId}`;
+      setSelectedChatId(tempChatId);
+      setChatMessages([]);
+    }
+  }, [selectedChatUser, userChatDetails, loadMessages]);
+
+  // ✅ Smart auto-scroll - only when new messages arrive or chat changes
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      // Small delay to ensure DOM has updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+        });
+      }, 100);
+    }
+  }, [chatMessages.length, selectedChatId]);
+
   // ✅ Socket listeners for receive + sent
   // 🎯 THIS IS WHERE THE MAGIC HAPPENS - loadMessages is called on receive_message
   // ✅ Socket listeners for receive + sent
@@ -135,19 +183,33 @@ export default function ChatSystem() {
       }
     };
 
-    const handleSent = (msg) => {
-      console.log('✅ Message sent confirmation:', msg);
-      // Replace temporary message with the real one from server
-      setChatMessages((prev) =>
-        prev.map((m) =>
-          m.id.startsWith('temp-') &&
-          m.message === msg.text &&
-          m.senderId === currentUserId
-            ? formatMessage(msg)
-            : m
-        )
-      );
-    };
+const handleSent = (msg) => {
+  console.log('✅ Message sent confirmation:', msg);
+
+  // Replace the temporary message with the confirmed one
+  setChatMessages((prev) =>
+    prev.map((m) =>
+      m.id.startsWith('temp-') &&
+      m.message === msg.text &&
+      m.senderId === currentUserId
+        ? formatMessage(msg)
+        : m
+    )
+  );
+
+  // 🆕 If this was a brand-new chat, update the chatId and refresh chat list
+  if (selectedChatId.startsWith('temp-') && msg.chatId) {
+    console.log('✨ Updating chatId after first message:', msg.chatId);
+    setSelectedChatId(msg.chatId);
+
+    // Optional: refresh chat list so the new chat appears in the sidebar
+    // 🧠 React Query way to refresh sidebar chat list
+    refetchUserChats().then(() => {
+      console.log('🔁 Chat list refetched after first message');
+    });
+  }
+};
+
 
     const handleError = (error) => {
       console.error('❌ Socket error:', error);
@@ -178,13 +240,11 @@ export default function ChatSystem() {
       return;
     }
 
-    const chat = userChatDetails.find((c) => c._id === selectedChatId);
-    if (!chat) {
-      console.error('❌ Chat not found');
-      return;
-    }
+    const chat =
+      userChatDetails.find((c) => c._id === selectedChatId) || selectedChat;
 
-    const receiver = chat.participants.find((p) => p._id !== currentUserId);
+
+    const receiver = chat?.participants.find((p) => p._id !== currentUserId);
     if (!receiver) {
       console.error('❌ Receiver not found');
       return;
@@ -216,6 +276,7 @@ export default function ChatSystem() {
       senderId: currentUserId,
       receiverId: receiver._id,
       text: trimmedMessage,
+      
     });
   };
 
@@ -293,10 +354,10 @@ export default function ChatSystem() {
                         {other?.firstName || 'Unknown'}
                       </h4>
                       <p className='text-sm text-muted-foreground truncate'>
-                        {chat.lastMessage?.text || 'No messages yet'}
+                        {/* {chat.lastMessage?.text || 'No messages yet'} */}
                       </p>
                     </div>
-                    {chat.unreadCount > 0 && <Badge>{chat.unreadCount}</Badge>}
+                    {/* {chat.unreadCount > 0 && <Badge>{chat.unreadCount}</Badge>} */}
                   </div>
                 </div>
               );
@@ -310,10 +371,15 @@ export default function ChatSystem() {
         {selectedChat ? (
           <>
             <CardHeader>
-              {
-                selectedChat.participants.find((p) => p._id !== currentUserId)
-                  ?.firstName
-              }
+              {(() => {
+                const other = selectedChat.participants.find(
+                  (p) => p._id !== currentUserId
+                );
+                return (
+                  `${other?.firstName || ''} ${other?.lastName || ''}`.trim() ||
+                  'Chat'
+                );
+              })()}
             </CardHeader>
             <CardContent className='p-0'>
               <ScrollArea className='h-[400px] p-4'>
