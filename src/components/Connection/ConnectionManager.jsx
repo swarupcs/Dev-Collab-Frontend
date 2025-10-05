@@ -36,7 +36,7 @@ import { useGetPendingConnectionRequests } from '@/hooks/connection/getPendingCo
 import { useReviewConnectionRequest } from '@/hooks/connection/useReviewConnectionRequest';
 import { useGetMyConnections } from '@/hooks/connection/getMyConnections';
 
-export function ConnectionsManager({ suggestedRequestData }) {
+export function ConnectionsManager({ suggestedRequestData, onOpenChat }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [skillFilter, setSkillFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
@@ -95,7 +95,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
     refetch,
   } = useGetPendingConnectionRequests();
 
-  console.log('pendingRequests', pendingRequests);
+  // console.log('pendingRequests', pendingRequests);
 
   const [pendingRequestData, setPendingRequestData] = useState(
     pendingRequests?.data?.requests || []
@@ -107,7 +107,7 @@ export function ConnectionsManager({ suggestedRequestData }) {
     }
   }, [pendingRequests]);
 
-  console.log('pendingRequestData', pendingRequestData);
+  // console.log('pendingRequestData', pendingRequestData);
 
   const [processedReviewRequests, setProcessedReviewRequests] = useState(
     new Set()
@@ -137,7 +137,7 @@ const { mutate: reviewMutate, isLoading: reviewIsLoading } =
 
 
 const handleAcceptRequest = (requestId) => {
-  console.log('[v0] Accepting connection request:', requestId);
+  // console.log('[v0] Accepting connection request:', requestId);
   reviewMutate({ status: 'accepted', requestId });
 };
 
@@ -166,6 +166,11 @@ const handleRejectRequest = (requestId) => {
         .toLowerCase()
         .includes(searchTerm.toLowerCase())
   );
+
+  const handleSendMessage = (user) => {
+    console.log('user', user);
+     onOpenChat(user);
+  }
 
   if (userConnectionsLoading) {
     return (
@@ -612,16 +617,26 @@ const handleRejectRequest = (requestId) => {
                                 </Button>
                               )}
                             </div>
-                            <Button
-                              size='sm'
-                              variant='outline'
-                              onClick={() => {
-                                // Navigate to user profile or handle view profile action
-                                console.log('View profile for:', user._id);
-                              }}
-                            >
-                              View Profile
-                            </Button>
+                            <div className='flex gap-2'>
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() => {
+                                  // Navigate to user profile or handle view profile action
+                                  // console.log('View profile for:', user._id);
+                                }}
+                              >
+                                View Profile
+                              </Button>
+                              <Button
+                                size='sm'
+                                onClick={() => {
+                                 handleSendMessage(user);
+                                }}
+                              >
+                                Send Message
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>

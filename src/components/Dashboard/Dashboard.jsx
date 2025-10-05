@@ -148,12 +148,12 @@ export function Dashboard() {
   };
 
   const getFilteredConnections = (tab) => {
-    console.log(
-      '[v0] Filtering connections for tab:',
-      tab,
-      'search:',
-      connectionSearch
-    );
+    // console.log(
+    //   '[v0] Filtering connections for tab:',
+    //   tab,
+    //   'search:',
+    //   connectionSearch
+    // );
     let filtered = connections;
 
     // Filter by tab
@@ -198,12 +198,12 @@ export function Dashboard() {
       );
     }
 
-    console.log('[v0] Filtered connections result:', filtered.length);
+    // console.log('[v0] Filtered connections result:', filtered.length);
     return filtered;
   };
 
   const getFilteredConversations = () => {
-    console.log('[v0] Filtering conversations with search:', messageSearch);
+    // console.log('[v0] Filtering conversations with search:', messageSearch);
     if (!messageSearch.trim()) {
       return connections.filter((c) => c.lastMessage); // Only show connections with messages
     }
@@ -218,7 +218,7 @@ export function Dashboard() {
             .includes(messageSearch.toLowerCase())
       );
 
-    console.log('[v0] Filtered conversations result:', filtered.length);
+    // console.log('[v0] Filtered conversations result:', filtered.length);
     return filtered;
   };
 
@@ -368,7 +368,7 @@ export function Dashboard() {
               className='pl-10 bg-background border-border focus:border-ring focus:ring-ring'
               value={messageSearch}
               onChange={(e) => {
-                console.log('[v0] Message search changed:', e.target.value);
+                // console.log('[v0] Message search changed:', e.target.value);
                 setMessageSearch(e.target.value);
               }}
             />
@@ -640,7 +640,7 @@ export function Dashboard() {
             className='pl-10 bg-background border-border focus:border-ring focus:ring-ring'
             value={connectionSearch}
             onChange={(e) => {
-              console.log('[v0] Connection search changed:', e.target.value);
+              // console.log('[v0] Connection search changed:', e.target.value);
               setConnectionSearch(e.target.value);
             }}
           />

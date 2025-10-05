@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,7 +13,7 @@ import { useSocket } from '@/hooks/socket/useSocket';
 import { useAppStore } from '@/store';
 import axiosInstance from '@/config/axiosConfig';
 
-export default function ChatSystem() {
+export default function ChatSystem({ selectedChatUser }) {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,104 +21,239 @@ export default function ChatSystem() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const { data: userChat } = useGetUserChat();
+  const { data: userChat, refetch: refetchUserChats } = useGetUserChat();
   const userChatDetails = userChat?.data?.chats || [];
 
   const socket = useSocket();
   const currentUser = useAppStore((s) => s.getCurrentUser());
   const currentUserId = currentUser?._id;
 
-  console.log("socket", socket);
+  console.log('selectedChatUser ', selectedChatUser);
 
+  // Add animation styles
   useEffect(() => {
-    if (!socket) return;
-    console.log('socket instance:', socket);
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  // ✅ Debug socket state
+  useEffect(() => {
+    console.log('🔍 ChatSystem - Socket state:', {
+      exists: !!socket,
+      connected: socket?.connected,
+      id: socket?.id,
+    });
   }, [socket]);
 
   // ✅ derive selected chat
-  const selectedChat = userChatDetails.find(
+  let selectedChat = userChatDetails.find(
     (chat) => chat._id === selectedChatId
   );
 
-  // ✅ Auto-scroll when messages or chat change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, selectedChatId]);
+  // 🧠 If no existing chat but a selected user exists, create a temporary chat object
+  if (!selectedChat && selectedChatUser) {
+    selectedChat = {
+      _id: `temp-${selectedChatUser._id}`,
+      participants: [
+        {
+          _id: currentUserId,
+          firstName: currentUser?.firstName,
+          lastName: currentUser?.lastName,
+          photoUrl: currentUser?.photoUrl,
+        },
+        selectedChatUser,
+      ],
+      lastMessage: null,
+      isTemp: true,
+    };
+  }
 
-  // ✅ Register user once after connect
-  useEffect(() => {
-    if (socket && currentUserId) {
-      socket.emit('register', currentUserId);
-    }
-  }, [socket, currentUserId]);
-  
-
-  // ✅ Socket listeners for receive + sent
-useEffect(() => {
-  if (!socket || !currentUserId) return;
-
-  const handleReceive = (msg) => {
-    if (msg.chatId === selectedChatId) {
-      setChatMessages((prev) => [...prev, formatMessage(msg)]);
-    }
-  };
-
-  const handleSent = (msg) => {
-    setChatMessages((prev) =>
-      prev.map((m) =>
-        m.id.startsWith('temp-') &&
-        m.message === msg.text &&
-        m.senderId === currentUserId
-          ? formatMessage(msg)
-          : m
-      )
-    );
-  };
-
-  socket.on('receive_message', handleReceive);
-  socket.on('message_sent', handleSent);
-
-  return () => {
-    socket.off('receive_message', handleReceive);
-    socket.off('message_sent', handleSent);
-  };
-}, [socket, currentUserId, selectedChatId]);
-
+  console.log('selectedChat', selectedChat);
 
   // ✅ Format backend message
-  const formatMessage = (msg) => ({
-    id: msg._id,
-    senderId: msg.senderId?._id || msg.senderId,
-    message: msg.text,
-    time: new Date(msg.createdAt).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
+  const formatMessage = useCallback(
+    (msg) => ({
+      id: msg._id,
+      senderId: msg.senderId?._id || msg.senderId,
+      message: msg.text,
+      time: new Date(msg.createdAt).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+      isMe:
+        (msg.senderId?._id || msg.senderId)?.toString() ===
+        currentUserId?.toString(),
     }),
-    isMe:
-      (msg.senderId?._id || msg.senderId)?.toString() ===
-      currentUserId?.toString(),
-  });
+    [currentUserId]
+  );
 
-  // ✅ Fetch chat history via REST
-  const loadMessages = async (chatId) => {
-    try {
-      setIsLoadingMessages(true);
-      const res = await axiosInstance.get(`/chat/${chatId}/messages?limit=50`);
-      const messages = res.data?.data?.messages || [];
-      setChatMessages(messages.map(formatMessage));
-    } finally {
-      setIsLoadingMessages(false);
+  // ✅ Fetch chat history via REST (wrapped in useCallback)
+  const loadMessages = useCallback(
+    async (chatId) => {
+      try {
+        setIsLoadingMessages(true);
+        const res = await axiosInstance.get(
+          `/chat/${chatId}/messages?limit=50`
+        );
+        const messages = res.data?.data?.messages || [];
+        // Sort messages by createdAt to ensure latest is at bottom
+        const sortedMessages = messages.sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
+        setChatMessages(sortedMessages.map(formatMessage));
+      } catch (error) {
+        console.error('❌ Error loading messages:', error);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    },
+    [formatMessage]
+  );
+
+  // 👉 Auto-load chat when a user is clicked in ConnectionsManager
+  useEffect(() => {
+    if (!selectedChatUser) return; // nothing to do if no user clicked
+    console.log('🟢 Received selectedChatUser:', selectedChatUser);
+
+    // Find an existing chat with this user
+    const targetUserId = selectedChatUser._id?.toString();
+    const existingChat = userChatDetails.find((chat) =>
+      chat.participants.some(
+        (p) => p._id?.toString() === selectedChatUser._id?.toString()
+      )
+    );
+
+    if (existingChat) {
+      console.log('✅ Found existing chat, loading messages...');
+      setSelectedChatId(existingChat._id);
+      loadMessages(existingChat._id);
+      if (existingChat._id) loadMessages(existingChat._id);
+    } else {
+      console.log('🆕 No existing chat found, showing empty conversation.');
+      const tempChatId = `temp-${targetUserId}`;
+      setSelectedChatId(tempChatId);
+      setChatMessages([]);
     }
-  };
+  }, [selectedChatUser, userChatDetails, loadMessages]);
+
+  // ✅ Smart auto-scroll - only when new messages arrive or chat changes
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      // Small delay to ensure DOM has updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+        });
+      }, 100);
+    }
+  }, [chatMessages.length, selectedChatId]);
+
+  // ✅ Socket listeners for receive + sent
+  // 🎯 THIS IS WHERE THE MAGIC HAPPENS - loadMessages is called on receive_message
+  // ✅ Socket listeners for receive + sent
+  useEffect(() => {
+    if (!socket || !currentUserId) return;
+
+    const handleReceive = (msg) => {
+      console.log('📩 Received message:', msg);
+      // ⭐ If message is for the currently selected chat, add it to the messages
+      if (msg.chatId === selectedChatId) {
+        const formattedMsg = formatMessage(msg);
+        setChatMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          if (prev.some((m) => m.id === formattedMsg.id)) {
+            return prev;
+          }
+          return [...prev, formattedMsg];
+        });
+      }
+    };
+
+const handleSent = (msg) => {
+  console.log('✅ Message sent confirmation:', msg);
+
+  // Replace the temporary message with the confirmed one
+  setChatMessages((prev) =>
+    prev.map((m) =>
+      m.id.startsWith('temp-') &&
+      m.message === msg.text &&
+      m.senderId === currentUserId
+        ? formatMessage(msg)
+        : m
+    )
+  );
+
+  // 🆕 If this was a brand-new chat, update the chatId and refresh chat list
+  if (selectedChatId.startsWith('temp-') && msg.chatId) {
+    console.log('✨ Updating chatId after first message:', msg.chatId);
+    setSelectedChatId(msg.chatId);
+
+    // Optional: refresh chat list so the new chat appears in the sidebar
+    // 🧠 React Query way to refresh sidebar chat list
+    refetchUserChats().then(() => {
+      console.log('🔁 Chat list refetched after first message');
+    });
+  }
+};
+
+
+    const handleError = (error) => {
+      console.error('❌ Socket error:', error);
+    };
+
+    socket.on('receive_message', handleReceive);
+    socket.on('message_sent', handleSent);
+    socket.on('error_message', handleError);
+
+    // ✅ Cleanup listeners
+    return () => {
+      socket.off('receive_message', handleReceive);
+      socket.off('message_sent', handleSent);
+      socket.off('error_message', handleError);
+    };
+  }, [socket, currentUserId, selectedChatId, formatMessage]);
 
   // ✅ Send message
   const handleSendMessage = () => {
-    if (!message.trim() || !selectedChatId || !socket) return;
+    const trimmedMessage = message.trim();
+
+    if (!trimmedMessage || !selectedChatId || !socket) {
+      console.log('❌ Cannot send message:', {
+        hasMessage: !!trimmedMessage,
+        hasChat: !!selectedChatId,
+        hasSocket: !!socket,
+      });
+      return;
+    }
+
+    const chat =
+      userChatDetails.find((c) => c._id === selectedChatId) || selectedChat;
+
+
+    const receiver = chat?.participants.find((p) => p._id !== currentUserId);
+    if (!receiver) {
+      console.error('❌ Receiver not found');
+      return;
+    }
 
     const tempMessage = {
       id: 'temp-' + Date.now(),
       senderId: currentUserId,
-      message: message.trim(),
+      message: trimmedMessage,
       time: new Date().toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
@@ -126,21 +261,26 @@ useEffect(() => {
       isMe: true,
     };
 
+    console.log('📤 Sending message:', {
+      senderId: currentUserId,
+      receiverId: receiver._id,
+      text: trimmedMessage,
+    });
+
+    // Add to UI immediately
     setChatMessages((prev) => [...prev, tempMessage]);
     setMessage('');
 
-    const chat = userChatDetails.find((c) => c._id === selectedChatId);
-    const receiver = chat.participants.find((p) => p._id !== currentUserId);
-
-    // ✅ match backend
+    // Send via socket
     socket.emit('send_message', {
       senderId: currentUserId,
       receiverId: receiver._id,
-      text: tempMessage.message,
+      text: trimmedMessage,
+      
     });
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -214,10 +354,10 @@ useEffect(() => {
                         {other?.firstName || 'Unknown'}
                       </h4>
                       <p className='text-sm text-muted-foreground truncate'>
-                        {chat.lastMessage?.text || 'No messages yet'}
+                        {/* {chat.lastMessage?.text || 'No messages yet'} */}
                       </p>
                     </div>
-                    {chat.unreadCount > 0 && <Badge>{chat.unreadCount}</Badge>}
+                    {/* {chat.unreadCount > 0 && <Badge>{chat.unreadCount}</Badge>} */}
                   </div>
                 </div>
               );
@@ -231,10 +371,15 @@ useEffect(() => {
         {selectedChat ? (
           <>
             <CardHeader>
-              {
-                selectedChat.participants.find((p) => p._id !== currentUserId)
-                  ?.firstName
-              }
+              {(() => {
+                const other = selectedChat.participants.find(
+                  (p) => p._id !== currentUserId
+                );
+                return (
+                  `${other?.firstName || ''} ${other?.lastName || ''}`.trim() ||
+                  'Chat'
+                );
+              })()}
             </CardHeader>
             <CardContent className='p-0'>
               <ScrollArea className='h-[400px] p-4'>
@@ -243,20 +388,27 @@ useEffect(() => {
                     Loading...
                   </p>
                 ) : (
-                  chatMessages.map((msg) => (
+                  chatMessages.map((msg, index) => (
                     <div
                       key={msg.id}
-                      className={`flex ${
+                      className={`flex mb-4 ${
                         msg.isMe ? 'justify-end' : 'justify-start'
-                      }`}
+                      } animate-slideIn`}
+                      style={{
+                        animation: `slideIn 0.3s ease-out ${
+                          index * 0.05
+                        }s both`,
+                      }}
                     >
                       <div
-                        className={`p-3 rounded-lg ${
-                          msg.isMe ? 'bg-primary text-white' : 'bg-muted'
+                        className={`max-w-[70%] p-3 rounded-lg ${
+                          msg.isMe
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
                         }`}
                       >
-                        <p>{msg.message}</p>
-                        <small>{msg.time}</small>
+                        <p className='break-words'>{msg.message}</p>
+                        <p className='text-xs opacity-70 mt-1'>{msg.time}</p>
                       </div>
                     </div>
                   ))
@@ -270,10 +422,16 @@ useEffect(() => {
                 <Textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder='Type your message...'
+                  className='min-h-[60px] max-h-[120px]'
+                  rows={2}
                 />
-                <Button onClick={handleSendMessage} disabled={!message.trim()}>
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || !socket}
+                  className='self-end'
+                >
                   <Send className='h-4 w-4' />
                 </Button>
               </div>
@@ -281,7 +439,9 @@ useEffect(() => {
           </>
         ) : (
           <CardContent className='flex items-center justify-center h-full'>
-            <p>Select a chat to start messaging</p>
+            <p className='text-muted-foreground'>
+              Select a chat to start messaging
+            </p>
           </CardContent>
         )}
       </Card>

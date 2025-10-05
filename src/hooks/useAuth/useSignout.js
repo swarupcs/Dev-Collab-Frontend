@@ -3,6 +3,7 @@ import { useAppStore } from '@/store';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { disconnectSocket } from '../socket/useSocket';
 
 export const useSignout = () => {
   const queryClient = useQueryClient();
@@ -27,6 +28,8 @@ export const useSignout = () => {
         // Remove auth-related queries
         queryClient.removeQueries({ queryKey: ['profile'] });
         queryClient.removeQueries({ queryKey: ['suggestedRequests'] });
+
+        disconnectSocket(); // ✅ Manually disconnect socket
 
         // Keep other queries/data untouched
         clearUser();
