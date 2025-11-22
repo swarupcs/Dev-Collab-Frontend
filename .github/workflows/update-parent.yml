@@ -1,0 +1,32 @@
+name: Update Dev-Collab Parent Repo
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync-parent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout frontend repo
+        uses: actions/checkout@v4
+
+      - name: Sync parent repo
+        env:
+          TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+
+          # Clone parent repo
+          git clone https://x-access-token:${TOKEN}@github.com/swarupcs/Dev-Collab.git parent
+
+          cd parent
+
+          # Update submodules
+          git submodule update --remote --merge
+
+          git add frontend
+          git commit -m "Auto-update frontend submodule" || echo "No changes"
+          git push
