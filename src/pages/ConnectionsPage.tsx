@@ -1,11 +1,13 @@
-import { useNavigate } from 'react-router-dom';
-import { useConnections, usePendingRequests, useAcceptConnectionRequest, useRejectConnectionRequest } from '@/hooks/useConnections';
+import { useAppSelector } from '@/store/hooks';
+import type { RootState } from '@/store';
+import { useConnections, usePendingRequests, useAcceptConnectionRequest, useRejectConnectionRequest, useRemoveConnection } from '@/hooks/useConnections';
 import { useSearchUsers } from '@/hooks/useUser';
 import { useSendConnectionRequest } from '@/hooks/useConnections';
+import { toast } from 'sonner';
 import { useState } from 'react';
 
 export default function ConnectionsPage() {
-  const navigate = useNavigate();
+  const user = useAppSelector((state: RootState) => state.auth.user);
   const [searchQuery, setSearchQuery] = useState('');
   
   const { data: connections, isLoading: connectionsLoading } = useConnections();
@@ -15,10 +17,12 @@ export default function ConnectionsPage() {
   const acceptRequest = useAcceptConnectionRequest();
   const rejectRequest = useRejectConnectionRequest();
   const sendRequest = useSendConnectionRequest();
+  const removeConnection = useRemoveConnection();
 
   const handleAccept = async (connectionId: string) => {
     try {
       await acceptRequest.mutateAsync(connectionId);
+      toast.success('Connection accepted!');
     } catch (error) {
       console.error('Failed to accept request:', error);
     }
@@ -27,6 +31,7 @@ export default function ConnectionsPage() {
   const handleReject = async (connectionId: string) => {
     try {
       await rejectRequest.mutateAsync(connectionId);
+      toast.success('Request declined');
     } catch (error) {
       console.error('Failed to reject request:', error);
     }
@@ -35,150 +40,185 @@ export default function ConnectionsPage() {
   const handleConnect = async (userId: string) => {
     try {
       await sendRequest.mutateAsync(userId);
+      toast.success('Connection request sent!');
     } catch (error) {
       console.error('Failed to send request:', error);
+      toast.error('Failed to send connection request');
+    }
+  };
+
+  const handleDisconnect = async (connectionId: string) => {
+    if (!confirm('Are you sure you want to disconnect?')) return;
+    try {
+      await removeConnection.mutateAsync(connectionId);
+      toast.success('Disconnected successfully');
+    } catch (error) {
+      console.error('Failed to remove connection:', error);
+      toast.error('Failed to disconnect');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Connections</h1>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="text-indigo-600 hover:text-indigo-700"
-            >
-              ← Back to Dashboard
-            </button>
-          </div>
-        </div>
-      </header>
+      <div className="page-header">
+        <h1 className="page-title">Connections</h1>
+        <p className="page-subtitle">Manage your developer network</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Find Developers</h2>
+      {/* Search */}
+      <div className="mb-8">
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">⬢</span>
           <input
             type="text"
-            placeholder="Search by name or skills..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            placeholder="Search developers by name or skills…"
+            className="input-modern pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          
-          {searchQuery && searchResults && (
-            <div className="mt-4 bg-white rounded-lg shadow divide-y">
-              {searchResults.data.map((user) => (
-                <div key={user.id} className="p-4 flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {user.firstName} {user.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                    {user.skills.length > 0 && (
-                      <div className="flex gap-2 mt-2">
-                        {user.skills.slice(0, 3).map((skill) => (
-                          <span key={skill} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleConnect(user.id)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                  >
-                    Connect
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-
-        {/* Pending Requests */}
-        {!requestsLoading && pendingRequests && pendingRequests.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Pending Requests ({pendingRequests.length})
-            </h2>
-            <div className="bg-white rounded-lg shadow divide-y">
-              {pendingRequests.map((request) => (
-                <div key={request.id} className="p-4 flex justify-between items-center">
+        
+        {searchQuery && searchResults && (
+          <div className="mt-3 card-modern divide-y divide-border/30">
+            {searchResults.data.map((u) => (
+              <div key={u.id} className="p-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  {u.avatarUrl ? (
+                    <img src={u.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-primary/20" />
+                  ) : (
+                    <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold">
+                      {u.firstName[0]}{u.lastName[0]}
+                    </div>
+                  )}
                   <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {request.sender.firstName} {request.sender.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-600">wants to connect with you</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleAccept(request.id)}
-                      disabled={acceptRequest.isPending}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleReject(request.id)}
-                      disabled={rejectRequest.isPending}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-                    >
-                      Reject
-                    </button>
+                    <h3 className="font-semibold text-foreground text-sm">{u.firstName} {u.lastName}</h3>
+                    <p className="text-xs text-muted-foreground">{u.email}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+                {u.skills.length > 0 && (
+                  <div className="hidden sm:flex gap-1.5 mx-4">
+                    {u.skills.slice(0, 2).map((skill) => (
+                      <span key={skill} className="tag-primary">{skill}</span>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => handleConnect(u.id)}
+                  className="btn-primary text-xs py-1.5 px-4"
+                >
+                  Connect
+                </button>
+              </div>
+            ))}
           </div>
         )}
+      </div>
 
-        {/* My Connections */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            My Connections {connections && `(${connections.length})`}
+      {/* Pending Requests */}
+      {!requestsLoading && pendingRequests && pendingRequests.length > 0 && (
+        <div className="mb-8">
+          <h2 className="section-title mb-4 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+            Pending Requests ({pendingRequests.length})
           </h2>
-          
-          {connectionsLoading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">Loading connections...</p>
-            </div>
-          ) : connections?.length === 0 ? (
-            <div className="bg-white p-12 rounded-lg shadow text-center">
-              <p className="text-gray-600 mb-4">
-                You don't have any connections yet.
-              </p>
-              <p className="text-sm text-gray-500">
-                Use the search above to find developers to connect with!
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {connections?.map((connection) => {
-                // Determine the other user (not the current logged-in user)
-                // Since we don't have userId in this component, we'll show both users
-                // Or you can pass userId from useAppSelector if needed
-                const displayUser = connection.sender;
-                
-                return (
-                  <div key={connection.id} className="bg-white p-6 rounded-lg shadow">
-                    <h3 className="font-semibold text-gray-900 text-lg">
-                      {displayUser.firstName} {displayUser.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-2">
-                      Connected on {new Date(connection.createdAt).toLocaleDateString()}
-                    </p>
+          <div className="card-modern divide-y divide-border/30">
+            {pendingRequests.map((request) => (
+              <div key={request.id} className="p-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold">
+                    {request.sender.firstName[0]}{request.sender.lastName[0]}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">
+                      {request.sender.firstName} {request.sender.lastName}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">wants to connect</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAccept(request.id)}
+                    disabled={acceptRequest.isPending}
+                    className="btn-primary text-xs py-1.5 px-4"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleReject(request.id)}
+                    disabled={rejectRequest.isPending}
+                    className="btn-danger text-xs py-1.5 px-4"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      )}
+
+      {/* My Connections */}
+      <div>
+        <h2 className="section-title mb-4">
+          My Connections {connections && <span className="text-muted-foreground">({connections.length})</span>}
+        </h2>
+        
+        {connectionsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="card-modern p-5 animate-pulse space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-11 w-11 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-2/3 bg-muted rounded" />
+                    <div className="h-3 w-1/3 bg-muted rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : connections?.length === 0 ? (
+          <div className="card-modern p-12 text-center">
+            <div className="text-4xl mb-4">⬢</div>
+            <p className="text-foreground font-medium mb-2">No connections yet</p>
+            <p className="text-sm text-muted-foreground">Use the search above to find developers to connect with!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {connections?.map((connection) => {
+              const displayUser = connection.sender.id === user?.id
+                ? connection.receiver
+                : connection.sender;
+              
+              return (
+                <div key={connection.id} className="card-modern p-5 flex flex-col justify-between">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-11 w-11 rounded-full gradient-primary flex items-center justify-center text-white font-semibold text-sm">
+                      {displayUser.firstName[0]}{displayUser.lastName[0]}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-sm">
+                        {displayUser.firstName} {displayUser.lastName}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Connected {new Date(connection.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDisconnect(connection.id)}
+                    disabled={removeConnection.isPending}
+                    className="btn-danger text-xs py-1.5 w-full"
+                  >
+                    {removeConnection.isPending ? 'Disconnecting…' : 'Disconnect'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,238 +1,169 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  MapPin,
-  Globe,
-  Calendar,
-  Code,
-  Users,
-  MessageCircle,
-  UserPlus,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { DashboardHeader } from '@/components/DashboardHeader';
-import { PageTransition } from '@/components/PageTransition';
-import { SkeletonProfile } from '@/components/SkeletonCard';
-import { usersApi } from '@/services/mockApi';
-import { type MockUser } from '@/services/mockData';
-import { useAuth } from '@/context/AuthContext';
-import { AppGithubIcon } from '@/components/Icons';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAppSelector } from '@/store/hooks';
+import type { RootState } from '@/store';
+import { useUserById } from '@/hooks/useUser';
+import { useSendConnectionRequest } from '@/hooks/useConnections';
+import { toast } from 'sonner';
 
 export default function PublicProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const { user: currentUser } = useAuth();
-  const [profile, setProfile] = useState<MockUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    usersApi
-      .getById(id || '')
-      .then(setProfile)
-      .catch(() => setProfile(null))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const navigate = useNavigate();
+  const currentUser = useAppSelector((state: RootState) => state.auth.user);
+  const { data: profile, isLoading } = useUserById(id || '', !!id);
+  const sendRequest = useSendConnectionRequest();
 
   const isOwnProfile = currentUser?.id === id;
 
-  return (
-    <div className='min-h-screen bg-background grid-pattern'>
-      <DashboardHeader
-        backTo={{ label: 'Back to Dashboard', href: '/dashboard' }}
-      />
-      <PageTransition>
-        <div className='container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl'>
-          {loading ? (
-            <SkeletonProfile />
-          ) : !profile ? (
-            <Card className='glass border-border/50 shadow-card'>
-              <CardContent className='py-16 text-center'>
-                <p className='text-muted-foreground'>User not found.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <Card className='glass border-border/50 shadow-card overflow-hidden'>
-                  <div className='h-36 gradient-hero relative'>
-                    <div className='absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_hsla(185,72%,40%,0.2),_transparent_60%)]' />
-                  </div>
-                  <CardContent className='relative pt-0 pb-6 px-6'>
-                    <div className='flex items-end justify-between -mt-16 mb-4'>
-                      <div className='relative'>
-                        <Avatar className='h-28 w-28 ring-4 ring-card shadow-card'>
-                          <AvatarFallback className='gradient-primary text-primary-foreground text-3xl font-heading font-bold'>
-                            {profile.firstName[0]}
-                            {profile.lastName[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        {profile.isOnline && (
-                          <div className='absolute bottom-2 right-2 h-4 w-4 rounded-full border-2 border-card bg-green-500' />
-                        )}
-                      </div>
-                      {!isOwnProfile && (
-                        <Button
-                          className='gradient-primary border-0 shadow-glow font-medium'
-                          onClick={() =>
-                            toast.success('Connection request sent!')
-                          }
-                        >
-                          <UserPlus className='h-4 w-4 mr-1' />
-                          Connect
-                        </Button>
-                      )}
-                    </div>
-                    <h1 className='text-2xl font-heading font-bold mb-1'>
-                      {profile.firstName} {profile.lastName}
-                    </h1>
-                    <p className='text-sm text-muted-foreground mb-3'>
-                      {profile.email}
-                    </p>
-                    <div className='flex gap-6 text-sm'>
-                      {[
-                        { icon: Users, value: '24', label: 'Connections' },
-                        { icon: Code, value: '5', label: 'Projects' },
-                        { icon: MessageCircle, value: '89', label: 'Messages' },
-                      ].map((s) => (
-                        <div
-                          key={s.label}
-                          className='flex items-center gap-1.5 text-muted-foreground'
-                        >
-                          <s.icon className='h-4 w-4' />
-                          <span className='font-heading font-semibold text-foreground'>
-                            {s.value}
-                          </span>
-                          <span className='hidden sm:inline'>{s.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+  const handleConnect = async () => {
+    if (!id) return;
+    try {
+      await sendRequest.mutateAsync(id);
+      toast.success('Connection request sent!');
+    } catch {
+      toast.error('Failed to send connection request');
+    }
+  };
 
-              <div className='grid gap-6 lg:grid-cols-3 mt-6'>
-                <div className='space-y-6'>
-                  <Card className='glass border-border/50 shadow-card'>
-                    <CardHeader className='pb-3'>
-                      <CardTitle className='text-sm font-heading'>
-                        Details
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className='space-y-3'>
-                      {profile.location && (
-                        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                          <MapPin className='h-4 w-4' />
-                          {profile.location}
-                        </div>
-                      )}
-                      {profile.website && (
-                        <div className='flex items-center gap-2 text-sm'>
-                          <Globe className='h-4 w-4 text-muted-foreground' />
-                          <a
-                            href={profile.website}
-                            className='text-primary hover:underline truncate'
-                          >
-                            {profile.website.replace('https://', '')}
-                          </a>
-                        </div>
-                      )}
-                      {profile.github && (
-                        <div className='flex items-center gap-2 text-sm'>
-                          <AppGithubIcon className='h-4 w-4 shrink-0 text-muted-foreground' />
-                          <a
-                            href={`https://github.com/${profile.github}`}
-                            className='text-primary hover:underline'
-                          >
-                            {profile.github}
-                          </a>
-                        </div>
-                      )}
-                      {profile.twitter && (
-                        <div className='flex items-center gap-2 text-sm'>
-                          <XTwitterIcon className='h-4 w-4 shrink-0 text-muted-foreground' />
-                          <a
-                            href={`https://twitter.com/${profile.twitter}`}
-                            className='text-primary hover:underline'
-                          >
-                            @{profile.twitter}
-                          </a>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                  <Card className='glass border-border/50 shadow-card'>
-                    <CardContent className='pt-5 pb-5'>
-                      <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                        <Calendar className='h-4 w-4' />
-                        Joined{' '}
-                        {new Date(profile.joinedDate).toLocaleDateString(
-                          'en-US',
-                          { month: 'long', year: 'numeric' },
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                <div className='lg:col-span-2 space-y-6'>
-                  <Card className='glass border-border/50 shadow-card'>
-                    <CardHeader className='pb-3'>
-                      <CardTitle className='text-sm font-heading'>
-                        About
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className='text-sm leading-relaxed text-muted-foreground'>
-                        {profile.bio || 'No bio yet.'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className='glass border-border/50 shadow-card'>
-                    <CardHeader className='pb-3'>
-                      <CardTitle className='text-sm font-heading'>
-                        Skills
-                      </CardTitle>
-                      <CardDescription className='text-xs'>
-                        {profile.skills.length} skills
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className='flex flex-wrap gap-2'>
-                        {profile.skills.map((s) => (
-                          <Badge
-                            key={s}
-                            variant='secondary'
-                            className='text-sm py-1 px-3'
-                          >
-                            {s}
-                          </Badge>
-                        ))}
-                        {profile.skills.length === 0 && (
-                          <p className='text-sm text-muted-foreground'>
-                            No skills listed.
-                          </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="card-modern p-12 text-center">
+        <div className="text-4xl mb-4">◉</div>
+        <p className="text-foreground font-medium mb-2">User not found</p>
+        <button onClick={() => navigate(-1)} className="text-sm text-primary hover:text-primary/80 transition-colors">
+          ← Go back
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Profile Hero */}
+      <div className="card-modern overflow-hidden mb-6">
+        <div className="h-32 gradient-primary relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20" />
+        </div>
+        <div className="px-6 pb-6 relative">
+          <div className="flex items-end justify-between -mt-12 mb-4">
+            {profile.avatarUrl ? (
+              <img src={profile.avatarUrl} alt={profile.firstName} className="h-24 w-24 rounded-full object-cover border-4 border-card shadow-card bg-card ring-2 ring-primary/20" />
+            ) : (
+              <div className="h-24 w-24 rounded-full border-4 border-card shadow-card gradient-primary flex items-center justify-center text-2xl font-bold text-white">
+                {profile.firstName[0]}{profile.lastName[0]}
               </div>
-            </>
+            )}
+            <div className="flex gap-2">
+              {!isOwnProfile && (
+                <button
+                  onClick={handleConnect}
+                  disabled={sendRequest.isPending}
+                  className="btn-primary"
+                >
+                  {sendRequest.isPending ? 'Sending…' : 'Connect'}
+                </button>
+              )}
+              {isOwnProfile && (
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="btn-secondary"
+                >
+                  Edit Profile
+                </button>
+              )}
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>
+            {profile.firstName} {profile.lastName}
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">{profile.email}</p>
+          {profile.isOnline && (
+            <span className="inline-flex items-center gap-1.5 mt-2 text-sm text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Online
+            </span>
           )}
         </div>
-      </PageTransition>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column - Details */}
+        <div className="space-y-4">
+          <div className="card-modern p-5">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-4">Details</h3>
+            <div className="space-y-3">
+              {profile.location && (
+                <div className="flex items-center gap-2 text-sm text-foreground/80">
+                  <span>📍</span> {profile.location}
+                </div>
+              )}
+              {profile.website && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span>🌐</span>
+                  <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 truncate transition-colors">
+                    {profile.website.replace('https://', '')}
+                  </a>
+                </div>
+              )}
+              {profile.github && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span>💻</span>
+                  <a href={`https://github.com/${profile.github}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 transition-colors">
+                    {profile.github}
+                  </a>
+                </div>
+              )}
+              {profile.twitter && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span>🐦</span>
+                  <a href={`https://twitter.com/${profile.twitter}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 transition-colors">
+                    @{profile.twitter}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card-modern p-5">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>📅</span>
+              Joined {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - About & Skills */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="card-modern p-5">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">About</h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              {profile.bio || 'No bio yet.'}
+            </p>
+          </div>
+
+          <div className="card-modern p-5">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">
+              Skills ({profile.skills.length})
+            </h3>
+            {profile.skills.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((s) => (
+                  <span key={s} className="tag-primary">{s}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No skills listed.</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
