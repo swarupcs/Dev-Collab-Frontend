@@ -12,6 +12,7 @@ export const projectKeys = {
   list: (filters: ProjectQuery) => [...projectKeys.lists(), filters] as const,
   details: () => [...projectKeys.all, 'detail'] as const,
   detail: (id: string) => [...projectKeys.details(), id] as const,
+  collaborations: (id: string) => [...projectKeys.detail(id), 'collaborations'] as const,
   invitations: () => [...projectKeys.all, 'invitations'] as const,
 };
 
@@ -29,6 +30,16 @@ export const useProject = (projectId: string, enabled = true) => {
   return useQuery({
     queryKey: projectKeys.detail(projectId),
     queryFn: () => projectService.getProjectById(projectId),
+    enabled,
+    staleTime: 1 * 60 * 1000,
+  });
+};
+
+// Get project collaboration requests
+export const useProjectCollaborations = (projectId: string, enabled = true) => {
+  return useQuery({
+    queryKey: projectKeys.collaborations(projectId),
+    queryFn: () => projectService.getProjectCollaborations(projectId),
     enabled,
     staleTime: 1 * 60 * 1000,
   });
@@ -117,6 +128,9 @@ export const useRespondToCollaboration = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: projectKeys.detail(variables.projectId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: projectKeys.collaborations(variables.projectId),
       });
     },
   });

@@ -3,7 +3,6 @@ import { authService } from '@/services/auth.service';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials, logout as logoutAction } from '@/store/slices/authSlice';
 import type { LoginCredentials, RegisterData } from '@/types/api';
-import { getErrorMessage } from '@/api/client';
 
 // Query keys
 export const authKeys = {
@@ -80,7 +79,7 @@ export const useLogoutAll = () => {
 // Change password mutation
 export const useChangePassword = () => {
   return useMutation({
-    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+    mutationFn: (data: { oldPassword: string; newPassword: string }) =>
       authService.changePassword(data),
   });
 };

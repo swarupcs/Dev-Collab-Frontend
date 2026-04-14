@@ -4,6 +4,7 @@ import {
   type UpdateProfileData,
   type SearchUsersParams,
 } from '@/services/user.service';
+import type { User } from '@/types/api';
 
 // Query keys
 export const userKeys = {
@@ -37,17 +38,18 @@ export const useUpdateProfile = () => {
 };
 
 // Search users
-export const useSearchUsers = (params: SearchUsersParams) => {
+export const useSearchUsers = (params: SearchUsersParams, enabled = true) => {
   return useQuery({
     queryKey: userKeys.search(params),
     queryFn: () => userService.searchUsers(params),
+    enabled,
     staleTime: 2 * 60 * 1000,
   });
 };
 
 // Get user by ID
 export const useUserById = (userId: string, enabled = true) => {
-  return useQuery({
+  return useQuery<User>({
     queryKey: userKeys.detail(userId),
     queryFn: () => userService.getUserById(userId),
     enabled,
@@ -63,3 +65,4 @@ export const useTrendingSkills = () => {
     staleTime: 10 * 60 * 1000,
   });
 };
+
