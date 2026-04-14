@@ -23,32 +23,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-2xl">
-        <div>
-          <h2 className="text-center text-4xl font-bold text-gray-900 mb-2">
-            Dev-Collab
-          </h2>
-          <p className="text-center text-gray-600">Sign in to your account</p>
+    <div className="min-h-screen flex items-center justify-center bg-background grid-pattern relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl animate-pulse-glow" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-accent/5 blur-3xl" />
+
+      <div className="max-w-md w-full mx-4 relative z-10">
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <div className="h-14 w-14 rounded-xl gradient-primary flex items-center justify-center text-white font-bold text-xl shadow-glow mx-auto mb-4">
+            DC
+          </div>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+            Welcome back
+          </h1>
+          <p className="text-muted-foreground mt-2">Sign in to your Dev-Collab workspace</p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {login.isError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              Login failed. Please check your credentials.
-            </div>
-          )}
-          
-          <div className="space-y-4">
+
+        {/* Form Card */}
+        <div className="card-modern p-8">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {login.isError && (
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+                Login failed. Please check your credentials.
+              </div>
+            )}
+            
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground/80 mb-1.5">
                 Email Address
               </label>
               <input
                 id="email"
                 type="email"
                 required
-                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="input-modern"
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -56,35 +65,35 @@ export default function LoginPage() {
             </div>
             
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground/80 mb-1.5">
                 Password
               </label>
               <input
                 id="password"
                 type="password"
                 required
-                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="input-modern"
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={login.isPending}
-            className="w-full py-3 px-4 border border-transparent rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-          >
-            {login.isPending ? 'Signing in...' : 'Sign in'}
-          </button>
-          
-          <div className="text-center mt-4">
-            <Link to="/register" className="text-sm text-indigo-600 hover:text-indigo-500">
-              Don't have an account? Sign up
-            </Link>
-          </div>
-        </form>
+            <button
+              type="submit"
+              disabled={login.isPending}
+              className="w-full btn-primary py-3 text-base"
+            >
+              {login.isPending ? 'Signing in…' : 'Sign in'}
+            </button>
+            
+            <div className="text-center">
+              <Link to="/register" className="text-sm text-primary hover:text-primary/80 transition-colors">
+                Don't have an account? <span className="font-semibold">Sign up</span>
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

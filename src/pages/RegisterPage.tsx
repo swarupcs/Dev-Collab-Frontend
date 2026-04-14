@@ -25,47 +25,56 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-2xl">
-        <div>
-          <h2 className="text-center text-4xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen flex items-center justify-center bg-background grid-pattern relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-accent/5 blur-3xl animate-pulse-glow" />
+      <div className="absolute bottom-1/3 -left-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+
+      <div className="max-w-md w-full mx-4 relative z-10">
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <div className="h-14 w-14 rounded-xl gradient-primary flex items-center justify-center text-white font-bold text-xl shadow-glow mx-auto mb-4">
+            DC
+          </div>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             Create Account
-          </h2>
-          <p className="text-center text-gray-600">Join Dev-Collab today</p>
+          </h1>
+          <p className="text-muted-foreground mt-2">Join Dev-Collab and start collaborating</p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {register.isError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              Registration failed. Please try again.
-            </div>
-          )}
-          
-          <div className="space-y-4">
+
+        {/* Form Card */}
+        <div className="card-modern p-8">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {register.isError && (
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+                Registration failed. Please try again.
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="firstName" className="block text-sm font-medium text-foreground/80 mb-1.5">
                   First Name
                 </label>
                 <input
                   id="firstName"
                   type="text"
                   required
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="input-modern"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 />
               </div>
               
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="lastName" className="block text-sm font-medium text-foreground/80 mb-1.5">
                   Last Name
                 </label>
                 <input
                   id="lastName"
                   type="text"
                   required
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="input-modern"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 />
@@ -73,21 +82,21 @@ export default function RegisterPage() {
             </div>
             
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground/80 mb-1.5">
                 Email Address
               </label>
               <input
                 id="email"
                 type="email"
                 required
-                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="input-modern"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
             
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground/80 mb-1.5">
                 Password
               </label>
               <input
@@ -95,27 +104,27 @@ export default function RegisterPage() {
                 type="password"
                 required
                 minLength={6}
-                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="input-modern"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={register.isPending}
-            className="w-full py-3 px-4 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {register.isPending ? 'Creating account...' : 'Create account'}
-          </button>
-          
-          <div className="text-center mt-4">
-            <Link to="/login" className="text-sm text-indigo-600 hover:text-indigo-500">
-              Already have an account? Sign in
-            </Link>
-          </div>
-        </form>
+            <button
+              type="submit"
+              disabled={register.isPending}
+              className="w-full btn-primary py-3 text-base"
+            >
+              {register.isPending ? 'Creating account…' : 'Create account'}
+            </button>
+            
+            <div className="text-center">
+              <Link to="/login" className="text-sm text-primary hover:text-primary/80 transition-colors">
+                Already have an account? <span className="font-semibold">Sign in</span>
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

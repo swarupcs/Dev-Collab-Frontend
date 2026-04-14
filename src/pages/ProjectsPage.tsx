@@ -1,15 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects, useCreateProject } from '@/hooks/useProjects';
-import { useAppSelector } from '@/store/hooks';
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
-  const user = useAppSelector((state) => state.auth.user);
-  const { data: projectsData, isLoading } = useProjects();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    ownership: '',
+  });
+  const [page, setPage] = useState(1);
+
+  const query: any = { page };
+  if (filters.search) query.search = filters.search;
+  if (filters.status) query.status = filters.status;
+  if (filters.ownership) query.ownership = filters.ownership;
+
+  const { data: projectsData, isLoading } = useProjects(query);
   const createProject = useCreateProject();
   
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProject, setNewProject] = useState({
     title: '',
     description: '',
@@ -36,148 +46,203 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="text-indigo-600 hover:text-indigo-700"
-            >
-              ← Back to Dashboard
-            </button>
-          </div>
+      <div className="page-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="page-title">Projects</h1>
+          <p className="page-subtitle">Manage and discover collaboration opportunities</p>
         </div>
-      </header>
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className={showCreateForm ? 'btn-secondary' : 'btn-primary'}
+        >
+          {showCreateForm ? 'Cancel' : '+ Create Project'}
+        </button>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">All Projects</h2>
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-          >
-            {showCreateForm ? 'Cancel' : 'Create Project'}
-          </button>
-        </div>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <input
+          type="text"
+          placeholder="Search projects…"
+          className="input-modern max-w-xs"
+          value={filters.search}
+          onChange={(e) => { setFilters(prev => ({ ...prev, search: e.target.value })); setPage(1); }}
+        />
+        <select
+          className="input-modern max-w-[160px]"
+          value={filters.status}
+          onChange={(e) => { setFilters(prev => ({ ...prev, status: e.target.value })); setPage(1); }}
+        >
+          <option value="">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="ARCHIVED">Archived</option>
+        </select>
+        <select
+          className="input-modern max-w-[160px]"
+          value={filters.ownership}
+          onChange={(e) => { setFilters(prev => ({ ...prev, ownership: e.target.value })); setPage(1); }}
+        >
+          <option value="">All Ownership</option>
+          <option value="mine">My Projects</option>
+          <option value="member">I'm a Member</option>
+          <option value="applied">Applied</option>
+        </select>
+      </div>
 
-        {/* Create Project Form */}
-        {showCreateForm && (
-          <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-semibold mb-4">Create New Project</h3>
-            <form onSubmit={handleCreateProject} className="space-y-4">
+      {/* Create Project Form */}
+      {showCreateForm && (
+        <div className="card-modern p-6 mb-6">
+          <h3 className="section-title mb-4">Create New Project</h3>
+          <form onSubmit={handleCreateProject} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-1.5">
+                Project Title
+              </label>
+              <input
+                type="text"
+                required
+                className="input-modern"
+                value={newProject.title}
+                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-foreground/80 mb-1.5">
+                Description
+              </label>
+              <textarea
+                required
+                rows={3}
+                className="input-modern resize-none"
+                value={newProject.description}
+                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Project Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  value={newProject.title}
-                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  value={newProject.description}
-                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tech Stack (comma-separated)
+                <label className="block text-sm font-medium text-foreground/80 mb-1.5">
+                  Tech Stack <span className="text-muted-foreground">(comma-separated)</span>
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="React, Node.js, MongoDB"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="input-modern"
                   value={newProject.techStack}
                   onChange={(e) => setNewProject({ ...newProject, techStack: e.target.value })}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Open Roles (comma-separated, optional)
+                <label className="block text-sm font-medium text-foreground/80 mb-1.5">
+                  Open Roles <span className="text-muted-foreground">(optional)</span>
                 </label>
                 <input
                   type="text"
                   placeholder="Frontend Developer, Designer"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="input-modern"
                   value={newProject.openRoles}
                   onChange={(e) => setNewProject({ ...newProject, openRoles: e.target.value })}
                 />
               </div>
-              
-              <button
-                type="submit"
-                disabled={createProject.isPending}
-                className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {createProject.isPending ? 'Creating...' : 'Create Project'}
-              </button>
-            </form>
-          </div>
-        )}
+            </div>
+            
+            <button
+              type="submit"
+              disabled={createProject.isPending}
+              className="btn-primary w-full"
+            >
+              {createProject.isPending ? 'Creating…' : 'Create Project'}
+            </button>
+          </form>
+        </div>
+      )}
 
-        {/* Projects List */}
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading projects...</p>
-          </div>
-        ) : projectsData?.data.length === 0 ? (
-          <div className="bg-white p-12 rounded-lg shadow text-center">
-            <p className="text-gray-600 mb-4">No projects yet. Create your first project!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projectsData?.data.map((project) => (
-              <div key={project.id} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-semibold text-gray-900 text-lg">{project.title}</h3>
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    project.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {project.status}
-                  </span>
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{project.description}</p>
-                
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {project.techStack.slice(0, 3).map((tech) => (
-                    <span key={tech} className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded">
-                      {tech}
-                    </span>
-                  ))}
-                  {project.techStack.length > 3 && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                      +{project.techStack.length - 3}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span>{project.members.length} members</span>
-                  <span>{project.owner.firstName} {project.owner.lastName}</span>
-                </div>
+      {/* Projects List */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card-modern p-6 space-y-3 animate-pulse">
+              <div className="h-5 w-2/3 bg-muted rounded" />
+              <div className="h-4 w-full bg-muted rounded" />
+              <div className="h-4 w-1/2 bg-muted rounded" />
+              <div className="flex gap-2">
+                <div className="h-6 w-16 bg-muted rounded" />
+                <div className="h-6 w-16 bg-muted rounded" />
               </div>
-            ))}
-          </div>
-        )}
-      </main>
+            </div>
+          ))}
+        </div>
+      ) : projectsData?.data.length === 0 ? (
+        <div className="card-modern p-12 text-center">
+          <div className="text-4xl mb-4">◈</div>
+          <p className="text-foreground font-medium mb-2">No projects yet</p>
+          <p className="text-sm text-muted-foreground">Create your first project to get started!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projectsData?.data.map((project) => (
+            <button
+              key={project.id}
+              onClick={() => navigate(`/projects/${project.id}`)}
+              className="card-modern p-6 text-left group"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                  {project.title}
+                </h3>
+                <span className={`tag-${project.status === 'ACTIVE' ? 'success' : 'muted'} shrink-0 ml-2`}>
+                  {project.status}
+                </span>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{project.description}</p>
+              
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {project.techStack.slice(0, 3).map((tech) => (
+                  <span key={tech} className="tag-primary">{tech}</span>
+                ))}
+                {project.techStack.length > 3 && (
+                  <span className="tag-muted">+{project.techStack.length - 3}</span>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{project.members.length} members</span>
+                <span>{project.owner.firstName} {project.owner.lastName}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && projectsData?.pagination && projectsData.pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="btn-secondary disabled:opacity-50"
+          >
+            ← Previous
+          </button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {projectsData.pagination.totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={page === projectsData.pagination.totalPages}
+            className="btn-secondary disabled:opacity-50"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
