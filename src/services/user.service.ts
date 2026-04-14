@@ -1,5 +1,5 @@
 import apiClient from '@/api/client';
-import type { User, ApiResponse, PaginatedResponse } from '@/types/api';
+import type { User, ApiResponse } from '@/types/api';
 
 export interface UpdateProfileData {
   firstName?: string;
@@ -10,6 +10,7 @@ export interface UpdateProfileData {
   github?: string;
   twitter?: string;
   skills?: string[];
+  avatarUrl?: string;
   visibility?: 'PUBLIC' | 'PRIVATE';
 }
 
@@ -18,14 +19,6 @@ export interface SearchUsersParams {
   skills?: string;
   page?: number;
   limit?: number;
-}
-
-export interface UserProfile extends User {
-  stats: {
-    projectsOwned: number;
-    projectsJoined: number;
-    connections: number;
-  };
 }
 
 export const userService = {
@@ -44,29 +37,29 @@ export const userService = {
   // Search users
   searchUsers: async (
     params: SearchUsersParams
-  ): Promise<PaginatedResponse<User>> => {
+  ): Promise<{ data: User[]; pagination: any }> => {
     const response = await apiClient.get<
-      ApiResponse<{ users: User[]; pagination: any }>
+      ApiResponse<{ data: User[]; pagination: any }>
     >('/users/search', { params });
-    
+
     return {
-      data: response.data.data!.users,
+      data: response.data.data!.data,
       pagination: response.data.data!.pagination,
     };
   },
 
   // Get user by ID
-  getUserById: async (userId: string): Promise<UserProfile> => {
-    const response = await apiClient.get<ApiResponse<UserProfile>>(
+  getUserById: async (userId: string): Promise<User> => {
+    const response = await apiClient.get<ApiResponse<User>>(
       `/users/${userId}`
     );
     return response.data.data!;
   },
 
   // Get trending skills
-  getTrendingSkills: async (): Promise<{ name: string; count: number }[]> => {
+  getTrendingSkills: async (): Promise<{ skill: string; count: number }[]> => {
     const response = await apiClient.get<
-      ApiResponse<{ name: string; count: number }[]>
+      ApiResponse<{ skill: string; count: number }[]>
     >('/users/trending-skills');
     return response.data.data!;
   },

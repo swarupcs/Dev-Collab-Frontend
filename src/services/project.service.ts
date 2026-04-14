@@ -78,6 +78,16 @@ export const projectService = {
     return response.data.data!;
   },
 
+  // Get project collaboration requests
+  getProjectCollaborations: async (
+    projectId: string
+  ): Promise<CollaborationRequest[]> => {
+    const response = await apiClient.get<ApiResponse<CollaborationRequest[]>>(
+      `/projects/${projectId}/collaborations`
+    );
+    return response.data.data!;
+  },
+
   // Respond to collaboration request
   respondToCollaboration: async (
     projectId: string,
