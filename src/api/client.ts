@@ -1,7 +1,8 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError } from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse } from '@/types/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -21,14 +22,14 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
+  (error: any) => {
     return Promise.reject(error);
   }
 );
 
 // Response interceptor
 apiClient.interceptors.response.use(
-  (response) => {
+  (response: any) => {
     return response;
   },
   async (error: AxiosError<ApiResponse>) => {
@@ -76,7 +77,7 @@ apiClient.interceptors.response.use(
 export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     const apiError = error as AxiosError<ApiResponse>;
-    return apiError.response?.data?.message || error.message;
+    return apiError.response?.data?.message || apiError.message;
   }
   if (error instanceof Error) {
     return error.message;
