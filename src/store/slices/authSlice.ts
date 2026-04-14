@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import type { User } from '@/types/api';
 
 interface AuthState {
@@ -20,7 +21,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (
-      state,
+      state: AuthState,
       action: PayloadAction<{ user: User; accessToken: string }>
     ) => {
       state.user = action.payload.user;
@@ -28,16 +29,16 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       localStorage.setItem('accessToken', action.payload.accessToken);
     },
-    setUser: (state, action: PayloadAction<User>) => {
+    setUser: (state: AuthState, action: PayloadAction<User>) => {
       state.user = action.payload;
     },
-    logout: (state) => {
+    logout: (state: AuthState) => {
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
       localStorage.removeItem('accessToken');
     },
-    setLoading: (state, action: PayloadAction<boolean>) => {
+    setLoading: (state: AuthState, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
   },
