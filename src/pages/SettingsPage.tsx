@@ -47,7 +47,7 @@ export default function SettingsPage() {
       });
       setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
       toast.success('Password changed successfully. You will need to log in again.');
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate('/signin'), 2000);
     } catch {
       toast.error('Failed to change password. Check your current password.');
     }
@@ -56,7 +56,7 @@ export default function SettingsPage() {
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
-      navigate('/login');
+      navigate('/signin');
       toast.success('Signed out successfully');
     } catch {
       toast.error('Failed to sign out');
@@ -108,6 +108,53 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="card-modern p-6">
+          <h2 className="section-title mb-1">Appearance</h2>
+          <p className="text-sm text-muted-foreground mb-5">Customize your UI theme.</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">Dark Mode</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Always use dark theme (default)</p>
+            </div>
+            <button
+              className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-primary"
+            >
+              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="card-modern p-6">
+          <h2 className="section-title mb-1">Notifications</h2>
+          <p className="text-sm text-muted-foreground mb-5">Manage your alerts and emails.</p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Email Notifications</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Receive digests and important alerts</p>
+              </div>
+              <button
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-primary"
+              >
+                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-6" />
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Marketing</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Receive news and offers</p>
+              </div>
+              <button
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-muted"
+              >
+                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1" />
+              </button>
+            </div>
           </div>
         </div>
 

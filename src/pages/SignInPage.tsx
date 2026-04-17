@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLogin } from '@/hooks/useAuth';
 
-export default function LoginPage() {
+export default function SignInPage() {
   const navigate = useNavigate();
   const login = useLogin();
   
@@ -38,6 +38,11 @@ export default function LoginPage() {
             Welcome back
           </h1>
           <p className="text-muted-foreground mt-2">Sign in to your Dev-Collab workspace</p>
+        </div>
+
+        {/* Demo credentials hint */}
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm text-center mb-6 text-primary">
+          <p>Demo Credentials: <strong>alex@devcollab.io</strong> / <strong>password123</strong></p>
         </div>
 
         {/* Form Card */}
@@ -87,8 +92,18 @@ export default function LoginPage() {
               {login.isPending ? 'Signing in…' : 'Sign in'}
             </button>
             
-            <div className="text-center">
-              <Link to="/register" className="text-sm text-primary hover:text-primary/80 transition-colors">
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/50"></div></div>
+              <div className="relative flex justify-center text-sm"><span className="px-2 bg-card/80 text-muted-foreground">Or continue with</span></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button type="button" className="btn-secondary" onClick={() => alert('Coming soon!')}>GitHub</button>
+              <button type="button" className="btn-secondary" onClick={() => alert('Coming soon!')}>Google</button>
+            </div>
+
+            <div className="text-center mt-6">
+              <Link to="/signup" className="text-sm text-primary hover:text-primary/80 transition-colors">
                 Don't have an account? <span className="font-semibold">Sign up</span>
               </Link>
             </div>

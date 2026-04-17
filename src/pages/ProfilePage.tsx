@@ -3,6 +3,7 @@ import { useAppSelector } from '@/store/hooks';
 import type { RootState } from '@/store';
 import { useUpdateProfile } from '@/hooks/useUser';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
   const user = useAppSelector((state: RootState) => state.auth.user);
@@ -37,6 +38,25 @@ export default function ProfilePage() {
     }
   };
 
+  const calculateCompleteness = () => {
+    if (!user) return 0;
+    const fields = [
+      user.firstName,
+      user.lastName,
+      user.bio,
+      user.location,
+      user.website,
+      user.github,
+      user.twitter,
+      user.avatarUrl,
+      user.skills?.length > 0 ? true : '',
+    ];
+    const filled = fields.filter(v => Boolean(v)).length;
+    return Math.round((filled / fields.length) * 100);
+  };
+  
+  const completeness = calculateCompleteness();
+
   return (
     <div>
       {/* Header */}
@@ -55,9 +75,10 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="card-modern p-8">
-        {isEditing ? (
-          <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 card-modern p-8">
+          {isEditing ? (
+            <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-foreground/80 mb-1.5">First Name</label>
@@ -240,6 +261,48 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+        </div>
+        
+        {/* Right Sidebar: Completeness */}
+        <div className="space-y-6">
+          <div className="card-modern p-6 bg-gradient-to-br from-card/80 to-primary/5">
+            <h3 className="font-semibold text-foreground mb-4">Profile Completeness</h3>
+            <div className="flex items-end justify-between mb-2">
+              <span className="text-3xl font-heading font-bold text-gradient-primary">{completeness}%</span>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden border border-border/50 mb-4">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${completeness}%` }}
+                className="bg-primary h-2.5 rounded-full"
+              />
+            </div>
+            
+            {completeness < 100 && (
+              <div>
+                <p className="text-sm border-t border-border/50 pt-4 mb-3 text-foreground font-medium">To complete:</p>
+                <ul className="text-xs space-y-2">
+                  {!user?.bio && <li className="flex items-center gap-2 text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-accent" /> Add a bio</li>}
+                  {!user?.location && <li className="flex items-center gap-2 text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-accent" /> Add location</li>}
+                  {(!user?.skills || user.skills.length === 0) && <li className="flex items-center gap-2 text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-accent" /> Add skills</li>}
+                  {(!user?.github && !user?.website && !user?.twitter) && <li className="flex items-center gap-2 text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-accent" /> Add at least 1 link</li>}
+                </ul>
+              </div>
+            )}
+            
+            {completeness === 100 && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
+                  <span className="text-base">🎉</span> All Star Profile
+                </span>
+                <p className="text-xs text-muted-foreground mt-2">
+                  You are highly visible to peers and recruiters.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

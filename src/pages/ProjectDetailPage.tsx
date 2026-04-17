@@ -13,6 +13,8 @@ import {
 } from '@/hooks/useProjects';
 import { useSearchUsers } from '@/hooks/useUser';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Clock, Shield, Briefcase, ChevronRight, Layout, MessageSquare } from 'lucide-react';
 import type { Project, UpdateProjectData, CollaborationRequest } from '@/types/api';
 
 export default function ProjectDetailPage() {
@@ -190,7 +192,11 @@ export default function ProjectDetailPage() {
   });
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
       {/* Project Hero Card */}
       <div className="card-modern p-6 mb-6 relative overflow-hidden">
         <div className="absolute inset-0 gradient-hero opacity-40" />
@@ -487,6 +493,6 @@ export default function ProjectDetailPage() {
           </p>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

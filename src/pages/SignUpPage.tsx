@@ -2,30 +2,52 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRegister } from '@/hooks/useAuth';
 
-export default function RegisterPage() {
+export default function SignUpPage() {
   const navigate = useNavigate();
   const register = useRegister();
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     firstName: '',
     lastName: '',
   });
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+    
+    // Client-side validation
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMsg('Passwords do not match');
+      return;
+    }
+    if (formData.password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters');
+      return;
+    }
     
     try {
-      await register.mutateAsync(formData);
+      await register.mutateAsync({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      });
       navigate('/dashboard');
-    } catch (error) {
-      console.error('Registration failed:', error);
+    } catch (error: any) {
+      if (error?.response?.status === 409) {
+        setErrorMsg('Email address is already in use');
+      } else {
+        setErrorMsg('Registration failed. Please try again.');
+      }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background grid-pattern relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background grid-pattern relative overflow-hidden py-12">
       {/* Background glow effects */}
       <div className="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-accent/5 blur-3xl animate-pulse-glow" />
       <div className="absolute bottom-1/3 -left-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
@@ -43,11 +65,11 @@ export default function RegisterPage() {
         </div>
 
         {/* Form Card */}
-        <div className="card-modern p-8">
+        <div className="card-modern p-8 mb-6">
           <form className="space-y-5" onSubmit={handleSubmit}>
-            {register.isError && (
+            {(errorMsg || register.isError) && (
               <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
-                Registration failed. Please try again.
+                {errorMsg || 'Registration failed. Please try again.'}
               </div>
             )}
             
@@ -110,6 +132,21 @@ export default function RegisterPage() {
               />
             </div>
 
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground/80 mb-1.5">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                minLength={6}
+                className="input-modern"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              />
+            </div>
+
             <button
               type="submit"
               disabled={register.isPending}
@@ -118,12 +155,36 @@ export default function RegisterPage() {
               {register.isPending ? 'Creating account…' : 'Create account'}
             </button>
             
-            <div className="text-center">
-              <Link to="/login" className="text-sm text-primary hover:text-primary/80 transition-colors">
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/50"></div></div>
+              <div className="relative flex justify-center text-sm"><span className="px-2 bg-card/80 text-muted-foreground">Or continue with</span></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button type="button" className="btn-secondary" onClick={() => alert('Coming soon!')}>GitHub</button>
+              <button type="button" className="btn-secondary" onClick={() => alert('Coming soon!')}>Google</button>
+            </div>
+
+            <div className="text-center mt-6">
+              <Link to="/signin" className="text-sm text-primary hover:text-primary/80 transition-colors">
                 Already have an account? <span className="font-semibold">Sign in</span>
               </Link>
             </div>
           </form>
+        </div>
+
+        {/* Stats and Links */}
+        <div className="text-center space-y-4">
+          <div className="flex justify-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5"><span className="font-semibold text-foreground">10K+</span> Developers</div>
+            <div className="flex items-center gap-1.5"><span className="font-semibold text-foreground">500+</span> Projects</div>
+            <div className="flex items-center gap-1.5"><span className="font-semibold text-foreground">50+</span> Countries</div>
+          </div>
+          <div className="text-xs text-muted-foreground/60 space-x-3">
+            <Link to="#" className="hover:text-muted-foreground">Terms of Service</Link>
+            <span>•</span>
+            <Link to="#" className="hover:text-muted-foreground">Privacy Policy</Link>
+          </div>
         </div>
       </div>
     </div>

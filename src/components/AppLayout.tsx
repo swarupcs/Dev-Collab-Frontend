@@ -9,6 +9,8 @@ const navItems = [
   { to: '/projects', label: 'Projects', icon: '◈' },
   { to: '/explore', label: 'Explore', icon: '◎' },
   { to: '/connections', label: 'Connections', icon: '⬢' },
+  { to: '/discussion', label: 'Forum', icon: '▣' },
+  { to: '/chat', label: 'Messages', icon: '✉' },
   { to: '/profile', label: 'Profile', icon: '◉' },
   { to: '/settings', label: 'Settings', icon: '⚙' },
 ];
@@ -21,7 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
-    navigate('/login');
+    navigate('/signin');
   };
 
   return (

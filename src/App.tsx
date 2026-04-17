@@ -10,8 +10,8 @@ import { Toaster } from 'sonner';
 import AppLayout from './components/AppLayout';
 
 // Pages
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
 import DashboardPage from './pages/DashboardPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProfilePage from './pages/ProfilePage';
@@ -20,6 +20,11 @@ import ExplorePage from './pages/ExplorePage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import PublicProfilePage from './pages/PublicProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import HomePage from './pages/HomePage';
+import NotFoundPage from './pages/NotFoundPage';
+import ChatPage from './pages/ChatPage';
+import DiscussionPage from './pages/DiscussionPage';
+import DiscussionDetailPage from './pages/DiscussionDetailPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -100,19 +105,23 @@ function AppRoutes() {
       <AuthInitializer>
         <Routes>
           {/* Public routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/discussion" element={<DiscussionPage />} />
+          <Route path="/discussion/:id" element={<DiscussionDetailPage />} />
+          
           <Route
-            path="/login"
+            path="/signin"
             element={
               <PublicRoute>
-                <LoginPage />
+                <SignInPage />
               </PublicRoute>
             }
           />
           <Route
-            path="/register"
+            path="/signup"
             element={
               <PublicRoute>
-                <RegisterPage />
+                <SignUpPage />
               </PublicRoute>
             }
           />
@@ -182,10 +191,17 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Catch-all 404 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthInitializer>
     </BrowserRouter>
