@@ -8,16 +8,28 @@ import { useSendConnectionRequest } from '@/hooks/useConnections';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search,
-  Users,
-  Briefcase,
-  Globe,
-  X,
-  Send,
-  ChevronRight,
+  Search, Users, Briefcase, Globe, Send, Compass, Sparkles, Code2, MapPin, UserPlus, ArrowRight, Activity
 } from 'lucide-react';
 import type { Project } from '@/types/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { SkeletonCard } from '@/components/SkeletonCard';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 export default function ExplorePage() {
   const user = useAppSelector((state: RootState) => state.auth.user);
@@ -25,9 +37,7 @@ export default function ExplorePage() {
   const [selectedSkill, setSelectedSkill] = useState('');
   const [devPage, setDevPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<'all' | 'developers' | 'projects'>(
-    'all'
-  );
+  const [activeTab, setActiveTab] = useState<'all' | 'developers' | 'projects'>('all');
 
   // Modal State
   const [applyingTo, setApplyingTo] = useState<Project | null>(null);
@@ -70,9 +80,7 @@ export default function ExplorePage() {
     setApplyingTo(project);
     setAppData({
       role: project.openRoles[0] || 'Contributor',
-      message: `Hi! I'm interested in joining ${project.title}. I have experience with ${project.techStack.join(
-        ', '
-      )}.`,
+      message: `Hi! I'm interested in joining ${project.title}. I have experience with ${project.techStack.join(', ')}.`,
     });
   };
 
@@ -105,385 +113,383 @@ export default function ExplorePage() {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className='page-header'>
-        <h1 className='page-title'>Explore</h1>
-        <p className='page-subtitle'>
-          Discover developers and projects across the community
-        </p>
+    <div className="container mx-auto max-w-[1200px] py-8 px-4 sm:px-6 min-h-screen">
+      {/* Enhanced Page Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/5 via-background to-background border border-border/50 p-8 sm:p-10 mb-10 shadow-sm">
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+          <Compass className="w-64 h-64 text-foreground transform rotate-12 translate-x-8 -translate-y-12" />
+        </div>
+        <div className="relative z-10 max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4 border border-primary/20">
+            <Sparkles className="h-3.5 w-3.5" />
+            Discover
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-3">
+            Explore the Community
+          </h1>
+          <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-xl">
+            Find brilliant developers, discover trending open-source projects, and build your professional network.
+          </p>
+        </div>
       </div>
 
-      {/* Search */}
-      <form onSubmit={handleSearch} className='mb-6'>
-        <div className='relative'>
-          <span className='absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground'>
-            <Search className="h-5 w-5" />
-          </span>
-          <input
-            type='text'
-            placeholder='Search developers, projects, or skills…'
-            className='input-modern pl-10'
+      {/* Global Search & Filters Toolbar */}
+      <div className="mb-10 space-y-6">
+        <form onSubmit={handleSearch} className="relative max-w-2xl group">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          </div>
+          <Input
+            type="text"
+            placeholder="Search developers, projects, or skills..."
+            className="pl-12 h-14 bg-card border-border/60 text-base rounded-2xl shadow-sm focus-visible:ring-2 focus-visible:ring-primary/20 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
-      </form>
-
-      {/* Trending Skills */}
-      {!searchQuery && trendingSkills && trendingSkills.length > 0 && (
-        <div className='mb-8'>
-          <h3 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3'>
-            Trending Skills
-          </h3>
-          <div className='flex flex-wrap gap-2'>
-            {trendingSkills.map((skill) => (
-              <Button
-                key={skill.skill}
-                onClick={() => handleSkillClick(skill.skill)}
-                variant={selectedSkill === skill.skill ? 'primary' : 'secondary'}
-              >
-                {skill.skill}
-                <span
-                  className={`ml-1.5 text-xs ${selectedSkill === skill.skill ? 'text-white/70' : 'text-primary'}`}
-                >
-                  {skill.count}
-                </span>
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className='flex gap-1 mb-6 bg-card/40 rounded-lg p-1 border border-border/30 w-fit'>
-        {(['all', 'developers', 'projects'] as const).map((tab) => (
-          <Button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            variant={activeTab === tab ? 'default' : 'ghost'}
-          >
-            {tab === 'all' && `All (${developers.length + projects.length})`}
-            {tab === 'developers' && `Developers (${developers.length})`}
-            {tab === 'projects' && `Projects (${projects.length})`}
+          <Button type="submit" className="absolute inset-y-1.5 right-1.5 rounded-xl px-6">
+            Search
           </Button>
-        ))}
+        </form>
+
+        {/* Trending Skills */}
+        {!searchQuery && trendingSkills && trendingSkills.length > 0 && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+              <Activity className="h-4 w-4" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">Trending Technologies</h3>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              {trendingSkills.map((skill) => {
+                const isActive = selectedSkill === skill.skill;
+                return (
+                  <button
+                    key={skill.skill}
+                    onClick={() => handleSkillClick(skill.skill)}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${
+                      isActive 
+                        ? 'bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20 scale-105' 
+                        : 'bg-card border-border/50 text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                    }`}
+                  >
+                    {skill.skill}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${isActive ? 'bg-primary-foreground/20' : 'bg-muted'} font-semibold`}>
+                      {skill.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {isLoading ? (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className='card-modern p-6 animate-pulse space-y-3'>
-              <div className='flex gap-3'>
-                <div className='h-12 w-12 rounded-full bg-muted' />
-                <div className='flex-1 space-y-2'>
-                  <div className='h-4 w-2/3 bg-muted rounded' />
-                  <div className='h-3 w-1/3 bg-muted rounded' />
+      {/* Primary Navigation Tabs */}
+      <div className="flex items-center gap-2 mb-8 bg-card border border-border/50 p-1.5 rounded-2xl w-fit shadow-sm overflow-x-auto max-w-full">
+        {(['all', 'developers', 'projects'] as const).map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`relative px-6 py-2.5 text-sm font-semibold rounded-xl transition-colors whitespace-nowrap ${
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId="exploreTabs" 
+                  className="absolute inset-0 bg-primary/10 rounded-xl"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10 capitalize">
+                {tab}
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-primary/20' : 'bg-muted'}`}>
+                  {tab === 'all' && (developers.length + projects.length)}
+                  {tab === 'developers' && developers.length}
+                  {tab === 'projects' && projects.length}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Main Feed Content */}
+      <div className="space-y-12 pb-12">
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SkeletonCard key={i} lines={4} />
+            ))}
+          </div>
+        ) : (
+          <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-12">
+            
+            {/* Developers Section */}
+            {(activeTab === 'all' || activeTab === 'developers') && developers.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                    <Users className="h-6 w-6 text-primary" /> Developers
+                  </h2>
                 </div>
-              </div>
-              <div className='h-3 w-full bg-muted rounded' />
-              <div className='flex gap-2'>
-                <div className='h-6 w-14 bg-muted rounded' />
-                <div className='h-6 w-14 bg-muted rounded' />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <>
-          {/* Developers Section */}
-          {(activeTab === 'all' || activeTab === 'developers') &&
-            developers.length > 0 && (
-              <div className='mb-8'>
-                <h2 className='section-title mb-4'>Developers</h2>
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {developers.map((dev) => (
-                    <div key={dev.id} className='card-modern p-5'>
-                      <div className='flex items-start gap-3 mb-3'>
-                        {dev.avatarUrl ? (
-                          <img
-                            src={dev.avatarUrl}
-                            alt=''
-                            className='h-11 w-11 rounded-full object-cover ring-2 ring-primary/20'
-                          />
-                        ) : (
-                          <div className='h-11 w-11 rounded-full gradient-primary flex items-center justify-center text-white font-semibold text-sm'>
-                            {dev.firstName[0]}
-                            {dev.lastName[0]}
-                          </div>
-                        )}
-                        <div className='min-w-0 flex-1'>
-                          <Link
-                            to={`/profile/${dev.id}`}
-                            className='font-semibold text-foreground hover:text-primary text-sm transition-colors'
-                          >
+                    <motion.div 
+                      variants={itemVariants}
+                      key={dev.id} 
+                      className="group bg-card border border-border/50 rounded-3xl p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 flex flex-col h-full"
+                    >
+                      <div className="flex items-start gap-4 mb-4">
+                        <Avatar className="h-14 w-14 border-2 border-background shadow-sm ring-1 ring-border/50 group-hover:ring-primary/30 transition-all">
+                          <AvatarImage src={dev.avatarUrl} alt={dev.firstName} className="object-cover" />
+                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary font-bold text-lg">
+                            {dev.firstName[0]}{dev.lastName[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="min-w-0 flex-1">
+                          <Link to={`/profile/${dev.id}`} className="font-bold text-foreground text-lg hover:text-primary transition-colors truncate block">
                             {dev.firstName} {dev.lastName}
                           </Link>
                           {dev.location && (
-                            <p className='text-xs text-muted-foreground truncate'>
-                              📍 {dev.location}
-                            </p>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 font-medium">
+                              <MapPin className="h-3 w-3" />
+                              <span className="truncate">{dev.location}</span>
+                            </div>
                           )}
                         </div>
                       </div>
-                      {dev.bio && (
-                        <p className='text-sm text-muted-foreground mb-3 line-clamp-2'>
+                      
+                      {dev.bio ? (
+                        <p className="text-sm text-muted-foreground mb-6 line-clamp-2 leading-relaxed flex-1">
                           {dev.bio}
                         </p>
+                      ) : (
+                        <div className="flex-1" />
                       )}
-                      <div className='flex flex-wrap gap-1.5 mb-4'>
-                        {dev.skills.slice(0, 3).map((s) => (
-                          <span key={s} className='tag-primary'>
-                            {s}
-                          </span>
-                        ))}
-                        {dev.skills.length > 3 && (
-                          <span className='tag-muted'>
-                            +{dev.skills.length - 3}
-                          </span>
-                        )}
+                      
+                      <div className="mt-auto space-y-5">
+                        <div className="flex flex-wrap gap-1.5">
+                          {dev.skills.slice(0, 3).map((s) => (
+                            <Badge key={s} variant="secondary" className="font-medium text-[11px] bg-muted/50 border border-border/50 hover:bg-muted px-2.5 py-0.5 rounded-lg">
+                              {s}
+                            </Badge>
+                          ))}
+                          {dev.skills.length > 3 && (
+                            <Badge variant="outline" className="font-medium text-[11px] border-border/50 text-muted-foreground px-2.5 py-0.5 rounded-lg">
+                              +{dev.skills.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-3 pt-4 border-t border-border/40">
+                          <Button onClick={() => handleConnect(dev.id)} className="flex-1 rounded-xl shadow-sm hover:shadow-md transition-all h-10 gap-2 font-semibold">
+                            <UserPlus className="h-4 w-4" /> Connect
+                          </Button>
+                          <Button asChild variant="secondary" className="flex-1 rounded-xl h-10 font-semibold bg-muted hover:bg-muted/80">
+                            <Link to={`/profile/${dev.id}`}>View Profile</Link>
+                          </Button>
+                        </div>
                       </div>
-                      <div className='flex gap-2'>
-                        <Button
-                          onClick={() => handleConnect(dev.id)}
-                          className='flex-1'
-                          size='sm'
-                        >
-                          Connect
-                        </Button>
-                        <Button
-                          as={Link}
-                          to={`/profile/${dev.id}`}
-                          className='flex-1'
-                          variant='secondary'
-                          size='sm'
-                        >
-                          View
-                        </Button>
-                      </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-                {/* Pagination for devs */}
-                {searchResults?.pagination &&
-                  searchResults.pagination.totalPages > 1 && (
-                    <div className='flex justify-center items-center gap-4 mt-6'>
-                      <Button
-                        onClick={() => setDevPage((p) => Math.max(1, p - 1))}
-                        disabled={devPage === 1}
-                        variant='secondary'
-                      >
-                        ← Previous
-                      </Button>
-                      <span className='text-sm text-muted-foreground'>
-                        Page {devPage} of {searchResults.pagination.totalPages}
-                      </span>
-                      <Button
-                        onClick={() => setDevPage((p) => p + 1)}
-                        disabled={
-                          devPage === searchResults.pagination.totalPages
-                        }
-                        variant='secondary'
-                      >
-                        Next →
-                      </Button>
-                    </div>
-                  )}
-              </div>
+                
+                {searchResults?.pagination && searchResults.pagination.totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-4 mt-8">
+                    <Button onClick={() => setDevPage((p) => Math.max(1, p - 1))} disabled={devPage === 1} variant="outline" className="rounded-full px-6">
+                      Previous
+                    </Button>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Page {devPage} of {searchResults.pagination.totalPages}
+                    </span>
+                    <Button onClick={() => setDevPage((p) => p + 1)} disabled={devPage === searchResults.pagination.totalPages} variant="outline" className="rounded-full px-6">
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </section>
             )}
 
-          {/* Projects Section */}
-          {(activeTab === 'all' || activeTab === 'projects') &&
-            projects.length > 0 && (
-              <div className='mb-8'>
-                <h2 className='section-title mb-4'>Projects</h2>
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            {/* Projects Section */}
+            {(activeTab === 'all' || activeTab === 'projects') && projects.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                    <Briefcase className="h-6 w-6 text-accent" /> Active Projects
+                  </h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {projects.map((project) => (
-                    <div key={project.id} className='card-modern p-5'>
-                      <div className='flex justify-between items-start mb-3'>
-                        <Link
-                          to={`/projects/${project.id}`}
-                          className='font-semibold text-foreground hover:text-primary transition-colors'
-                        >
-                          {project.title}
-                        </Link>
-                        <span
-                          className={`tag-${project.status === 'ACTIVE' ? 'success' : 'muted'} shrink-0 ml-2`}
-                        >
+                    <motion.div 
+                      variants={itemVariants}
+                      key={project.id} 
+                      className="group bg-card border border-border/50 rounded-3xl p-6 transition-all duration-300 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5 flex flex-col h-full relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                        <div className="bg-accent/10 p-3 rounded-2xl text-accent border border-accent/20">
+                          <Code2 className="h-6 w-6" />
+                        </div>
+                        <Badge variant={project.status === 'ACTIVE' ? 'default' : 'secondary'} className={`font-semibold rounded-full ${project.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20' : ''}`}>
                           {project.status}
-                        </span>
+                        </Badge>
                       </div>
-                      <p className='text-sm text-muted-foreground mb-4 line-clamp-2'>
+                      
+                      <Link to={`/projects/${project.id}`} className="block mb-2">
+                        <h3 className="text-xl font-bold text-foreground group-hover:text-accent transition-colors leading-tight line-clamp-1">
+                          {project.title}
+                        </h3>
+                      </Link>
+                      
+                      <p className="text-sm text-muted-foreground mb-6 line-clamp-2 leading-relaxed flex-1">
                         {project.description}
                       </p>
-                      <div className='flex flex-wrap gap-1.5 mb-4'>
-                        {project.techStack.slice(0, 3).map((tech) => (
-                          <span key={tech} className='tag-primary'>
-                            {tech}
-                          </span>
-                        ))}
+                      
+                      <div className="mt-auto space-y-5">
+                        <div className="flex flex-wrap gap-1.5">
+                          {project.techStack.slice(0, 3).map((tech) => (
+                            <Badge key={tech} variant="secondary" className="font-medium text-[11px] bg-accent/5 text-accent border border-accent/10 px-2.5 py-0.5 rounded-lg">
+                              {tech}
+                            </Badge>
+                          ))}
+                          {project.techStack.length > 3 && (
+                            <Badge variant="outline" className="font-medium text-[11px] border-border/50 text-muted-foreground px-2.5 py-0.5 rounded-lg">
+                              +{project.techStack.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between pt-4 border-t border-border/40">
+                          <div className="flex items-center -space-x-2">
+                            {project.members.slice(0, 3).map((m, i) => (
+                              <Avatar key={i} className="h-8 w-8 border-2 border-card ring-1 ring-border/50">
+                                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                                  M{i+1}
+                                </AvatarFallback>
+                              </Avatar>
+                            ))}
+                            {project.members.length > 3 && (
+                              <div className="h-8 w-8 rounded-full border-2 border-card bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground ring-1 ring-border/50 z-10">
+                                +{project.members.length - 3}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {project.openRoles.length > 0 && (
+                            <Button onClick={() => handleApply(project)} size="sm" className="rounded-xl font-semibold shadow-sm gap-1.5 h-9 bg-accent hover:bg-accent/90 text-white">
+                              Apply Now <ArrowRight className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <div className='flex items-center justify-between'>
-                        <span className='text-xs text-muted-foreground'>
-                          {project.members.length} members
-                        </span>
-                        {project.openRoles.length > 0 && (
-                          <Button
-                            onClick={() => handleApply(project)}
-                            variant='accent'
-                            size='sm'
-                          >
-                            Apply
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-                {/* Pagination for projects */}
-                {projectsData?.pagination &&
-                  projectsData.pagination.totalPages > 1 && (
-                    <div className='flex justify-center items-center gap-4 mt-6'>
-                      <Button
-                        onClick={() =>
-                          setProjectPage((p) => Math.max(1, p - 1))
-                        }
-                        disabled={projectPage === 1}
-                        variant='secondary'
-                      >
-                        ← Previous
-                      </Button>
-                      <span className='text-sm text-muted-foreground'>
-                        Page {projectPage} of{' '}
-                        {projectsData.pagination.totalPages}
-                      </span>
-                      <Button
-                        onClick={() => setProjectPage((p) => p + 1)}
-                        disabled={
-                          projectPage === projectsData.pagination.totalPages
-                        }
-                        variant='secondary'
-                      >
-                        Next →
-                      </Button>
-                    </div>
-                  )}
-              </div>
+                
+                {projectsData?.pagination && projectsData.pagination.totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-4 mt-8">
+                    <Button onClick={() => setProjectPage((p) => Math.max(1, p - 1))} disabled={projectPage === 1} variant="outline" className="rounded-full px-6">
+                      Previous
+                    </Button>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Page {projectPage} of {projectsData.pagination.totalPages}
+                    </span>
+                    <Button onClick={() => setProjectPage((p) => p + 1)} disabled={projectPage === projectsData.pagination.totalPages} variant="outline" className="rounded-full px-6">
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </section>
             )}
 
-          {/* Empty State */}
-          {developers.length === 0 && projects.length === 0 && (
-            <div className='card-modern p-12 text-center'>
-              <div className='text-4xl mb-4'>◎</div>
-              <p className='text-foreground font-medium mb-2'>
-                No results found
-              </p>
-              <p className='text-sm text-muted-foreground'>
-                Try different search terms or skill filters.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-      {/* Application Modal */}
-      <AnimatePresence>
-        {applyingTo && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className='absolute inset-0 bg-black/60 backdrop-blur-sm'
-              onClick={() => setApplyingTo(null)}
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className='relative w-full max-w-lg bg-card border border-border/50 rounded-2xl shadow-glow overflow-hidden z-10'
-            >
-              <div className='gradient-primary h-2' />
-              <div className='p-6'>
-                <div className='flex items-center justify-between mb-6'>
-                  <div>
-                    <h3 className='text-xl font-bold text-foreground'>
-                      Join Collaboration
-                    </h3>
-                    <p className='text-sm text-muted-foreground mt-1'>
-                      Applying for {applyingTo.title}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => setApplyingTo(null)}
-                    variant='ghost'
-                    size='icon'
-                  >
-                    <X className='h-5 w-5' />
-                  </Button>
+            {/* Empty State */}
+            {developers.length === 0 && projects.length === 0 && (
+              <motion.div variants={itemVariants} className="text-center p-16 border border-dashed border-border/60 rounded-3xl bg-muted/5 flex flex-col items-center justify-center w-full mt-8">
+                <div className="bg-background p-4 rounded-full shadow-sm border border-border/50 mb-4">
+                  <Globe className="h-8 w-8 text-muted-foreground/50" />
                 </div>
-
-                <form onSubmit={submitApplication} className='space-y-4'>
-                  <div>
-                    <label className='block text-sm font-medium text-foreground/80 mb-1.5 flex items-center gap-2'>
-                      <Briefcase className='h-4 w-4' /> Select Role
-                    </label>
-                    <select
-                      className='input-modern'
-                      value={appData.role}
-                      onChange={(e) =>
-                        setAppData({ ...appData, role: e.target.value })
-                      }
-                      required
-                    >
-                      {applyingTo.openRoles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                      <option value='Contributor'>Contributor</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className='block text-sm font-medium text-foreground/80 mb-1.5 flex items-center gap-2'>
-                      <Send className='h-4 w-4' /> Introduction Message
-                    </label>
-                    <textarea
-                      className='input-modern min-h-[120px] resize-none'
-                      placeholder="Explain why you're a good fit for this project..."
-                      value={appData.message}
-                      onChange={(e) =>
-                        setAppData({ ...appData, message: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className='pt-2 flex gap-3'>
-                    <Button
-                      type='button'
-                      onClick={() => setApplyingTo(null)}
-                      className='flex-1'
-                      variant='secondary'
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type='submit'
-                      disabled={applyToProject.isPending}
-                      className='flex-1 shadow-glow'
-                    >
-                      {applyToProject.isPending
-                        ? 'Submitting...'
-                        : 'Send Application'}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </div>
+                <h3 className="text-xl font-bold text-foreground mb-2">No Results Found</h3>
+                <p className="text-muted-foreground max-w-sm mb-6">
+                  We couldn't find anything matching your search criteria. Try adjusting your search terms or clearing your skill filters.
+                </p>
+                <Button onClick={() => {setSearchQuery(''); setSelectedSkill('');}} variant="outline" className="rounded-full px-8">
+                  Clear Filters
+                </Button>
+              </motion.div>
+            )}
+          </motion.div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* Application Modal */}
+      <Dialog open={!!applyingTo} onOpenChange={(open) => !open && setApplyingTo(null)}>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-background border-border/50 shadow-2xl rounded-3xl">
+          <div className="px-8 py-6 border-b border-border/40 bg-gradient-to-br from-accent/10 to-background relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+              <Briefcase className="w-24 h-24 text-accent transform rotate-12" />
+            </div>
+            <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              Join Project
+            </DialogTitle>
+            <DialogDescription className="text-sm mt-2 text-muted-foreground">
+              Applying for <span className="font-semibold text-foreground">{applyingTo?.title}</span>
+            </DialogDescription>
+          </div>
+          
+          <form onSubmit={submitApplication} className="p-8 space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-muted-foreground" /> Select Role
+              </label>
+              <div className="relative">
+                <select
+                  className="w-full h-12 bg-background border-border/60 focus-visible:ring-2 focus-visible:ring-accent/20 rounded-xl px-4 appearance-none font-medium transition-all"
+                  value={appData.role}
+                  onChange={(e) => setAppData({ ...appData, role: e.target.value })}
+                  required
+                >
+                  {applyingTo?.openRoles.map((role) => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                  <option value="Contributor">Contributor</option>
+                </select>
+                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Send className="h-4 w-4 text-muted-foreground" /> Introduction Message
+              </label>
+              <textarea
+                className="w-full min-h-[140px] resize-y bg-background border-border/60 focus-visible:ring-2 focus-visible:ring-accent/20 rounded-xl p-4 text-sm transition-all"
+                placeholder="Explain why you're a good fit for this project..."
+                value={appData.message}
+                onChange={(e) => setAppData({ ...appData, message: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/40">
+              <Button type="button" variant="ghost" onClick={() => setApplyingTo(null)} className="rounded-full px-6">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={applyToProject.isPending} className="rounded-full px-8 shadow-md hover:shadow-lg transition-all gap-2 bg-accent hover:bg-accent/90 text-white">
+                {applyToProject.isPending ? 'Submitting...' : 'Send Application'}
+                {!applyToProject.isPending && <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
