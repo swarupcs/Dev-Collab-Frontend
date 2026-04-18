@@ -27,9 +27,11 @@ export interface Comment {
 }
 
 export const discussionService = {
-  getPosts: async (params?: any): Promise<Post[]> => {
-    const response = await apiClient.get<ApiResponse<Post[]>>('/discussion', { params });
-    return response.data.data!;
+  getPosts: async ({ pageParam = 1, ...params }): Promise<any> => {
+    const response = await apiClient.get<ApiResponse<Post[]>>('/discussion', { 
+      params: { ...params, page: pageParam }
+    });
+    return response.data;
   },
 
   getPostById: async (id: string): Promise<Post> => {

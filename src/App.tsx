@@ -26,6 +26,8 @@ import ChatPage from './pages/ChatPage';
 import DiscussionPage from './pages/DiscussionPage';
 import DiscussionDetailPage from './pages/DiscussionDetailPage';
 
+import ActivityPage from './pages/ActivityPage';
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -106,8 +108,6 @@ function AppRoutes() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/discussion" element={<DiscussionPage />} />
-          <Route path="/discussion/:id" element={<DiscussionDetailPage />} />
           
           <Route
             path="/signin"
@@ -196,6 +196,30 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/discussion" 
+            element={
+              <ProtectedRoute>
+                <DiscussionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/discussion/:id" 
+            element={
+              <ProtectedRoute>
+                <DiscussionDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/activity" 
+            element={
+              <ProtectedRoute>
+                <ActivityPage />
               </ProtectedRoute>
             }
           />

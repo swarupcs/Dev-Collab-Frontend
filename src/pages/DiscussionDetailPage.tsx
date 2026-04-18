@@ -5,8 +5,8 @@ import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 import { MessageSquare, Heart, Bookmark, Share2, ArrowLeft, Send, CornerDownRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
-// Basic markdown parser
 const renderMarkdown = (text: string) => {
   let html = text.replace(/<[^>]*>?/gm, ''); // sanitize basic HTML
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // bold
@@ -15,7 +15,6 @@ const renderMarkdown = (text: string) => {
   html = html.replace(/\n\n/g, '<br/><br/>'); // paragraphs
   return <div dangerouslySetInnerHTML={{ __html: html }} className="prose-modern" />;
 };
-
 export default function DiscussionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -71,19 +70,20 @@ export default function DiscussionDetailPage() {
     return (
       <div className="card-modern p-12 text-center">
         <p className="text-muted-foreground mb-4">Post not found.</p>
-        <button onClick={() => navigate('/discussion')} className="btn-primary">Back to Forum</button>
+        <Button onClick={() => navigate('/discussion')}>Back to Forum</Button>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <button 
+      <Button 
+        variant="ghost"
         onClick={() => navigate('/discussion')}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Forum
-      </button>
+      </Button>
 
       {/* Main Post Card */}
       <motion.div 
@@ -116,28 +116,32 @@ export default function DiscussionDetailPage() {
 
         <div className="flex items-center justify-between pt-6 border-t border-border/50">
           <div className="flex items-center gap-6">
-            <button 
+            <Button 
+              variant="ghost"
+              size="sm"
               onClick={handleLike}
-              className={`flex items-center gap-2 text-sm transition-colors hover:text-accent ${post.isLiked ? 'text-accent' : 'text-muted-foreground'}`}
+              className={`flex items-center gap-2 text-sm ${post.isLiked ? 'text-accent' : 'text-muted-foreground'}`}
             >
               <Heart className={`h-5 w-5 ${post.isLiked ? 'fill-accent' : ''}`} />
               <span className="font-medium">{post.likesCount || 0}</span>
-            </button>
+            </Button>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MessageSquare className="h-5 w-5" />
               <span className="font-medium">{post.commentsCount || 0}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <Button 
+              variant="ghost"
+              size="icon"
               onClick={() => toggleBookmarkMutation.mutate(post.id)}
-              className={`p-2 rounded-lg hover:bg-muted transition-colors ${post.isBookmarked ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`${post.isBookmarked ? 'text-primary' : 'text-muted-foreground'}`}
             >
               <Bookmark className={`h-5 w-5 ${post.isBookmarked ? 'fill-primary' : ''}`} />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
+            </Button>
+            <Button variant="ghost" size="icon" className="text-muted-foreground">
               <Share2 className="h-5 w-5" />
-            </button>
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -156,37 +160,38 @@ export default function DiscussionDetailPage() {
                 <span className="flex items-center gap-1.5">
                   <CornerDownRight className="h-3 w-3" /> Replying to a comment
                 </span>
-                <button type="button" onClick={() => setReplyTo(null)} className="font-bold">Cancel</button>
+                <Button variant="link" size="sm" onClick={() => setReplyTo(null)} className="font-bold">Cancel</Button>
               </div>
             )}
             <textarea
               placeholder="Add to the discussion..."
-              className="input-modern min-h-[100px] resize-none"
+              className="input-modern min-h-[100px] resize-none w-full"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               required
             />
             <div className="flex justify-between items-center">
               <p className="text-xs text-muted-foreground">Be respectful and helpful.</p>
-              <button 
+              <Button 
                 type="submit" 
                 disabled={createCommentMutation.isPending}
-                className="btn-primary flex items-center gap-2"
               >
                 {createCommentMutation.isPending ? 'Posting...' : (
                   <>
                     <span>Post Comment</span>
-                    <Send className="h-4 w-4" />
+                    <Send className="h-4 w-4 ml-2" />
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
       ) : (
         <div className="card-modern p-8 text-center border-dashed">
           <p className="text-muted-foreground text-sm mb-4">Check back later or sign in to join the conversation.</p>
-          <Link to="/signin" className="btn-secondary px-6">Sign In</Link>
+          <Button asChild variant="secondary">
+            <Link to="/signin">Sign In</Link>
+          </Button>
         </div>
       )}
 
@@ -218,19 +223,21 @@ export default function DiscussionDetailPage() {
                     {comment.content}
                   </p>
                   <div className="flex items-center gap-4 mt-4">
-                    <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent transition-colors">
+                    <Button variant="ghost" size="sm" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent">
                       <Heart className="h-3.5 w-3.5" />
                       {comment.likesCount}
-                    </button>
-                    <button 
+                    </Button>
+                    <Button 
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setReplyTo(comment.id);
                         window.scrollTo({ top: document.querySelector('textarea')?.offsetTop! - 100, behavior: 'smooth' });
                       }}
-                      className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+                      className="text-xs text-muted-foreground hover:text-primary font-medium"
                     >
                       Reply
-                    </button>
+                    </Button>
                   </div>
 
                   {/* Nested Replies (Simplified) */}

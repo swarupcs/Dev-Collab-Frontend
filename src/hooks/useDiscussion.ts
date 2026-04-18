@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { discussionService } from '@/services/discussion.service';
 
 export const discussionKeys = {
@@ -9,10 +9,12 @@ export const discussionKeys = {
 };
 
 export const useDiscussionPosts = (params?: any) => {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: discussionKeys.posts(params),
-    queryFn: () => discussionService.getPosts(params),
-    staleTime: 2 * 60 * 1000,
+    queryFn: ({ pageParam }) => discussionService.getPosts({ ...params, pageParam }),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.data.length ? allPages.length + 1 : undefined;
+    },
   });
 };
 

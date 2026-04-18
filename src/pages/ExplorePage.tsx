@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import type { Project } from '@/types/api';
+import { Button } from '@/components/ui/button';
 
 export default function ExplorePage() {
   const user = useAppSelector((state: RootState) => state.auth.user);
@@ -25,7 +26,7 @@ export default function ExplorePage() {
   const [devPage, setDevPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
   const [activeTab, setActiveTab] = useState<'all' | 'developers' | 'projects'>(
-    'all',
+    'all'
   );
 
   // Modal State
@@ -38,7 +39,7 @@ export default function ExplorePage() {
       skills: selectedSkill || undefined,
       page: devPage,
     },
-    true,
+    true
   );
 
   const { data: projectsData, isLoading: projectsLoading } = useProjects({
@@ -51,7 +52,7 @@ export default function ExplorePage() {
   const applyToProject = useApplyToProject();
 
   const developers = (searchResults?.data || []).filter(
-    (d) => d.id !== user?.id,
+    (d) => d.id !== user?.id
   );
   const projects = projectsData?.data || [];
   const isLoading = searchLoading || projectsLoading;
@@ -69,7 +70,9 @@ export default function ExplorePage() {
     setApplyingTo(project);
     setAppData({
       role: project.openRoles[0] || 'Contributor',
-      message: `Hi! I'm interested in joining ${project.title}. I have experience with ${project.techStack.join(', ')}.`,
+      message: `Hi! I'm interested in joining ${project.title}. I have experience with ${project.techStack.join(
+        ', '
+      )}.`,
     });
   };
 
@@ -115,7 +118,7 @@ export default function ExplorePage() {
       <form onSubmit={handleSearch} className='mb-6'>
         <div className='relative'>
           <span className='absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground'>
-            ◎
+            <Search className="h-5 w-5" />
           </span>
           <input
             type='text'
@@ -135,14 +138,10 @@ export default function ExplorePage() {
           </h3>
           <div className='flex flex-wrap gap-2'>
             {trendingSkills.map((skill) => (
-              <button
+              <Button
                 key={skill.skill}
                 onClick={() => handleSkillClick(skill.skill)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border ${
-                  selectedSkill === skill.skill
-                    ? 'gradient-primary text-white border-primary/30 shadow-glow'
-                    : 'bg-card/60 border-border/50 text-foreground/70 hover:border-primary/30 hover:text-primary'
-                }`}
+                variant={selectedSkill === skill.skill ? 'primary' : 'secondary'}
               >
                 {skill.skill}
                 <span
@@ -150,7 +149,7 @@ export default function ExplorePage() {
                 >
                   {skill.count}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -159,19 +158,15 @@ export default function ExplorePage() {
       {/* Tabs */}
       <div className='flex gap-1 mb-6 bg-card/40 rounded-lg p-1 border border-border/30 w-fit'>
         {(['all', 'developers', 'projects'] as const).map((tab) => (
-          <button
+          <Button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-              activeTab === tab
-                ? 'bg-primary/10 text-primary border border-primary/20'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            variant={activeTab === tab ? 'default' : 'ghost'}
           >
             {tab === 'all' && `All (${developers.length + projects.length})`}
             {tab === 'developers' && `Developers (${developers.length})`}
             {tab === 'projects' && `Projects (${projects.length})`}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -249,18 +244,22 @@ export default function ExplorePage() {
                         )}
                       </div>
                       <div className='flex gap-2'>
-                        <button
+                        <Button
                           onClick={() => handleConnect(dev.id)}
-                          className='btn-primary flex-1 text-xs py-2'
+                          className='flex-1'
+                          size='sm'
                         >
                           Connect
-                        </button>
-                        <Link
+                        </Button>
+                        <Button
+                          as={Link}
                           to={`/profile/${dev.id}`}
-                          className='btn-secondary text-xs py-2 text-center'
+                          className='flex-1'
+                          variant='secondary'
+                          size='sm'
                         >
                           View
-                        </Link>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -269,25 +268,25 @@ export default function ExplorePage() {
                 {searchResults?.pagination &&
                   searchResults.pagination.totalPages > 1 && (
                     <div className='flex justify-center items-center gap-4 mt-6'>
-                      <button
+                      <Button
                         onClick={() => setDevPage((p) => Math.max(1, p - 1))}
                         disabled={devPage === 1}
-                        className='btn-secondary disabled:opacity-50'
+                        variant='secondary'
                       >
                         ← Previous
-                      </button>
+                      </Button>
                       <span className='text-sm text-muted-foreground'>
                         Page {devPage} of {searchResults.pagination.totalPages}
                       </span>
-                      <button
+                      <Button
                         onClick={() => setDevPage((p) => p + 1)}
                         disabled={
                           devPage === searchResults.pagination.totalPages
                         }
-                        className='btn-secondary disabled:opacity-50'
+                        variant='secondary'
                       >
                         Next →
-                      </button>
+                      </Button>
                     </div>
                   )}
               </div>
@@ -329,12 +328,13 @@ export default function ExplorePage() {
                           {project.members.length} members
                         </span>
                         {project.openRoles.length > 0 && (
-                          <button
+                          <Button
                             onClick={() => handleApply(project)}
-                            className='btn-accent text-xs py-1.5 px-3'
+                            variant='accent'
+                            size='sm'
                           >
                             Apply
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -344,28 +344,28 @@ export default function ExplorePage() {
                 {projectsData?.pagination &&
                   projectsData.pagination.totalPages > 1 && (
                     <div className='flex justify-center items-center gap-4 mt-6'>
-                      <button
+                      <Button
                         onClick={() =>
                           setProjectPage((p) => Math.max(1, p - 1))
                         }
                         disabled={projectPage === 1}
-                        className='btn-secondary disabled:opacity-50'
+                        variant='secondary'
                       >
                         ← Previous
-                      </button>
+                      </Button>
                       <span className='text-sm text-muted-foreground'>
                         Page {projectPage} of{' '}
                         {projectsData.pagination.totalPages}
                       </span>
-                      <button
+                      <Button
                         onClick={() => setProjectPage((p) => p + 1)}
                         disabled={
                           projectPage === projectsData.pagination.totalPages
                         }
-                        className='btn-secondary disabled:opacity-50'
+                        variant='secondary'
                       >
                         Next →
-                      </button>
+                      </Button>
                     </div>
                   )}
               </div>
@@ -413,12 +413,13 @@ export default function ExplorePage() {
                       Applying for {applyingTo.title}
                     </p>
                   </div>
-                  <button
+                  <Button
                     onClick={() => setApplyingTo(null)}
-                    className='p-2 rounded-lg hover:bg-muted transition-colors'
+                    variant='ghost'
+                    size='icon'
                   >
                     <X className='h-5 w-5' />
-                  </button>
+                  </Button>
                 </div>
 
                 <form onSubmit={submitApplication} className='space-y-4'>
@@ -459,22 +460,23 @@ export default function ExplorePage() {
                   </div>
 
                   <div className='pt-2 flex gap-3'>
-                    <button
+                    <Button
                       type='button'
                       onClick={() => setApplyingTo(null)}
-                      className='btn-secondary flex-1'
+                      className='flex-1'
+                      variant='secondary'
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type='submit'
                       disabled={applyToProject.isPending}
-                      className='btn-primary flex-1 shadow-glow'
+                      className='flex-1 shadow-glow'
                     >
                       {applyToProject.isPending
                         ? 'Submitting...'
                         : 'Send Application'}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>

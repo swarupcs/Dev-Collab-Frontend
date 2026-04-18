@@ -2,17 +2,29 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
 import type { RootState } from '@/store';
 import { useLogout } from '@/hooks/useAuth';
-import { useState } from 'react';
+import { useState, ElementType } from 'react';
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Compass,
+  Users,
+  MessageSquare,
+  User,
+  Settings,
+  PanelLeft,
+  LogOut,
+} from 'lucide-react';
+import { Button } from './ui/button';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: '⬡' },
-  { to: '/projects', label: 'Projects', icon: '◈' },
-  { to: '/explore', label: 'Explore', icon: '◎' },
-  { to: '/connections', label: 'Connections', icon: '⬢' },
-  { to: '/discussion', label: 'Forum', icon: '▣' },
-  { to: '/chat', label: 'Messages', icon: '✉' },
-  { to: '/profile', label: 'Profile', icon: '◉' },
-  { to: '/settings', label: 'Settings', icon: '⚙' },
+const navItems: { to: string; label: string; icon: ElementType }[] = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/projects', label: 'Projects', icon: FolderKanban },
+  { to: '/explore', label: 'Explore', icon: Compass },
+  { to: '/connections', label: 'Connections', icon: Users },
+  { to: '/discussion', label: 'Forum', icon: MessageSquare },
+  { to: '/chat', label: 'Messages', icon: MessageSquare },
+  { to: '/profile', label: 'Profile', icon: User },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -44,11 +56,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       >
         {/* Brand */}
         <div className="p-6 border-b border-sidebar-border/50">
-          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-3 group">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-3 group"
+          >
             <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center text-white font-bold text-sm shadow-glow">
               DC
             </div>
-            <span className="text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors" style={{ fontFamily: 'var(--font-heading)' }}>
+            <span
+              className="text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
               Dev-Collab
             </span>
           </button>
@@ -69,7 +87,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 }`
               }
             >
-              <span className="text-base w-5 text-center">{item.icon}</span>
+              <item.icon className="h-5 w-5" />
               {item.label}
             </NavLink>
           ))}
@@ -79,26 +97,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-sidebar-border/50">
           <div className="flex items-center gap-3 mb-3">
             {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-primary/20" />
+              <img
+                src={user.avatarUrl}
+                alt=""
+                className="h-9 w-9 rounded-full object-cover ring-2 ring-primary/20"
+              />
             ) : (
               <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
+                {user?.firstName?.[0]}
+                {user?.lastName?.[0]}
               </div>
             )}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground truncate">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </p>
             </div>
           </div>
-          <button
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={handleLogout}
             disabled={logoutMutation.isPending}
-            className="w-full btn-danger text-xs py-2"
+            className="w-full"
           >
+            <LogOut className="mr-2 h-4 w-4" />
             {logoutMutation.isPending ? 'Signing out…' : 'Sign Out'}
-          </button>
+          </Button>
         </div>
       </aside>
 
@@ -110,9 +138,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={() => setSidebarOpen(true)}
             className="h-9 w-9 rounded-lg border border-border/50 flex items-center justify-center text-foreground hover:bg-muted/50 transition-colors"
           >
-            ☰
+            <PanelLeft className="h-6 w-6" />
           </button>
-          <span className="font-bold text-foreground text-sm tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+          <span
+            className="font-bold text-foreground text-sm tracking-tight"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
             Dev-Collab
           </span>
           <div className="h-9 w-9" /> {/* Spacer */}
