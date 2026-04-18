@@ -55,6 +55,16 @@ export default function ConnectionsPage() {
     }
   };
 
+  const handleCancelSentRequest = async (connectionId: string) => {
+    try {
+      await removeConnection.mutateAsync(connectionId);
+      toast.success('Connection request canceled');
+    } catch (error) {
+      console.error('Failed to cancel request:', error);
+      toast.error('Failed to cancel request');
+    }
+  };
+
   const sentRequests = pendingRequests?.filter((req) => req.sender.id === user?.id) || [];
   const receivedRequests = pendingRequests?.filter((req) => req.receiver.id === user?.id) || [];
 
@@ -281,8 +291,8 @@ export default function ConnectionsPage() {
                       </div>
                     </div>
                     <Button
-                      onClick={() => handleReject(request.id)}
-                      disabled={rejectRequest.isPending}
+                      onClick={() => handleCancelSentRequest(request.id)}
+                      disabled={removeConnection.isPending}
                       variant="outline"
                     >
                       Cancel Request

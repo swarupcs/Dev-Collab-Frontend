@@ -74,6 +74,7 @@ export const useRemoveConnection = () => {
       connectionService.removeConnection(connectionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: connectionKeys.list() });
+      queryClient.invalidateQueries({ queryKey: connectionKeys.requests() });
     },
   });
 };

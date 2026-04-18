@@ -129,12 +129,18 @@ export interface Connection {
     firstName: string;
     lastName: string;
     avatarUrl: string | null;
+    skills?: string[];
+    headline?: string;
+    bio?: string;
   };
   receiver: {
     id: string;
     firstName: string;
     lastName: string;
     avatarUrl: string | null;
+    skills?: string[];
+    headline?: string;
+    bio?: string;
   };
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
   createdAt: string;

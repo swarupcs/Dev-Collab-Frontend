@@ -4,7 +4,7 @@ import { useAppSelector } from '@/store/hooks';
 import type { RootState } from '@/store';
 import { useSearchUsers, useTrendingSkills } from '@/hooks/useUser';
 import { useProjects, useApplyToProject } from '@/hooks/useProjects';
-import { useSendConnectionRequest } from '@/hooks/useConnections';
+import { useSendConnectionRequest, useConnections, usePendingRequests, useRemoveConnection } from '@/hooks/useConnections';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -58,7 +58,11 @@ export default function ExplorePage() {
   });
   const { data: trendingSkills } = useTrendingSkills();
 
+  const { data: pendingRequests } = usePendingRequests();
+  const { data: connections } = useConnections();
+
   const sendRequest = useSendConnectionRequest();
+  const removeConnection = useRemoveConnection();
   const applyToProject = useApplyToProject();
 
   const developers = (searchResults?.data || []).filter(
@@ -74,6 +78,28 @@ export default function ExplorePage() {
     } catch {
       toast.error('Failed to send connection request');
     }
+  };
+
+  const handleCancelRequest = async (connectionId: string) => {
+    try {
+      await removeConnection.mutateAsync(connectionId);
+      toast.success('Connection request canceled');
+    } catch {
+      toast.error('Failed to cancel request');
+    }
+  };
+
+  const getConnectionStatus = (userId: string) => {
+    const connection = connections?.find((c: any) => c.sender.id === userId || c.receiver.id === userId);
+    if (connection) return { status: 'CONNECTED', id: connection.id };
+
+    const sentReq = pendingRequests?.find((req: any) => req.receiver.id === userId && req.sender.id === user?.id);
+    if (sentReq) return { status: 'SENT', id: sentReq.id };
+
+    const receivedReq = pendingRequests?.find((req: any) => req.sender.id === userId && req.receiver.id === user?.id);
+    if (receivedReq) return { status: 'RECEIVED', id: receivedReq.id };
+
+    return { status: 'NONE' };
   };
 
   const handleApply = (project: Project) => {
@@ -286,9 +312,42 @@ export default function ExplorePage() {
                         </div>
                         
                         <div className="flex items-center gap-3 pt-4 border-t border-border/40">
-                          <Button onClick={() => handleConnect(dev.id)} className="flex-1 rounded-xl shadow-sm hover:shadow-md transition-all h-10 gap-2 font-semibold">
-                            <UserPlus className="h-4 w-4" /> Connect
-                          </Button>
+                          {(() => {
+                            const status = getConnectionStatus(dev.id);
+                            if (status.status === 'CONNECTED') {
+                              return (
+                                <Button disabled variant="outline" className="flex-1 rounded-xl h-10 gap-2 font-semibold">
+                                  <Users className="h-4 w-4" /> Connected
+                                </Button>
+                              );
+                            }
+                            if (status.status === 'SENT') {
+                              return (
+                                <Button 
+                                  onClick={() => status.id && handleCancelRequest(status.id)} 
+                                  disabled={removeConnection.isPending} 
+                                  variant="secondary" 
+                                  className="flex-1 rounded-xl h-10 gap-2 font-semibold border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors group/btn"
+                                >
+                                  <Send className="h-4 w-4 group-hover/btn:hidden" /> 
+                                  <span className="group-hover/btn:hidden">Request Sent</span>
+                                  <span className="hidden group-hover/btn:block">Cancel Request</span>
+                                </Button>
+                              );
+                            }
+                            if (status.status === 'RECEIVED') {
+                              return (
+                                <Button asChild variant="outline" className="flex-1 rounded-xl h-10 gap-2 font-semibold border-primary text-primary hover:bg-primary hover:text-white transition-colors">
+                                  <Link to="/connections">Respond</Link>
+                                </Button>
+                              );
+                            }
+                            return (
+                              <Button onClick={() => handleConnect(dev.id)} disabled={sendRequest.isPending} className="flex-1 rounded-xl shadow-sm hover:shadow-md transition-all h-10 gap-2 font-semibold">
+                                <UserPlus className="h-4 w-4" /> Connect
+                              </Button>
+                            );
+                          })()}
                           <Button asChild variant="secondary" className="flex-1 rounded-xl h-10 font-semibold bg-muted hover:bg-muted/80">
                             <Link to={`/profile/${dev.id}`}>View Profile</Link>
                           </Button>
