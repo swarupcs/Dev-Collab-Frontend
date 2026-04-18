@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
 import type { RootState } from '@/store';
 import { useUserById } from '@/hooks/useUser';
@@ -7,7 +7,7 @@ import { useDiscussionPosts } from '@/hooks/useDiscussion';
 import { useSendConnectionRequest } from '@/hooks/useConnections';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Mail, MapPin, Globe, Calendar, Briefcase, MessageSquare, ArrowRight } from 'lucide-react';
+import { Mail, MapPin, Globe, Calendar, Briefcase, MessageSquare, Heart } from 'lucide-react';
 import { AppGithubIcon, AppXTwitterIcon } from '@/components/Icons';
 
 export default function PublicProfilePage() {
@@ -17,11 +17,13 @@ export default function PublicProfilePage() {
   const { data: profile, isLoading: profileLoading } = useUserById(id || '', !!id);
   const sendRequest = useSendConnectionRequest();
 
-  // Fetch projects owned by this user
-  const { data: projectsData, isLoading: projectsLoading } = useProjects({ ownerId: id });
-  
+  // Fetch all projects and filter by user
+  const { data: projectsData, isLoading: projectsLoading } = useProjects({});
+  const userProjects = (projectsData?.data || []).filter((p: any) => p.owner?.id === id);
+
   // Fetch discussions by this user
-  const { data: discussions, isLoading: discussionsLoading } = useDiscussionPosts({ authorId: id });
+  const { data: discussionsData, isLoading: discussionsLoading } = useDiscussionPosts({ authorId: id });
+  const discussions = discussionsData?.pages?.flatMap((page: any) => page.data) || [];
 
   const isOwnProfile = currentUser?.id === id;
 
@@ -54,8 +56,6 @@ export default function PublicProfilePage() {
       </div>
     );
   }
-
-  const userProjects = projectsData?.data || [];
 
   return (
     <motion.div 
