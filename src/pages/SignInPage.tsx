@@ -42,11 +42,6 @@ export default function SignInPage() {
           <p className="text-muted-foreground mt-2">Sign in to your Dev-Collab workspace</p>
         </div>
 
-        {/* Demo credentials hint */}
-        <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm text-center mb-6 text-primary">
-          <p>Demo Credentials: <strong>alex@devcollab.io</strong> / <strong>password123</strong></p>
-        </div>
-
         {/* Form Card */}
         <div className="card-modern p-8">
           <form className="space-y-5" onSubmit={handleSubmit}>
