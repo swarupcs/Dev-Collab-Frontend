@@ -13,8 +13,7 @@ import {
 } from '@/hooks/useProjects';
 import { useSearchUsers } from '@/hooks/useUser';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Clock, Shield, Briefcase, ChevronRight, Layout, MessageSquare } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { Project, UpdateProjectData, CollaborationRequest } from '@/types/api';
 
 export default function ProjectDetailPage() {

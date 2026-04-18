@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, useSpring, useTransform, animate } from 'framer-motion';
+import { motion, animate } from 'framer-motion';
 
 interface StatCounterProps {
   value: string;

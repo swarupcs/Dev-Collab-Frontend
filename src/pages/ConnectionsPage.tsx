@@ -51,6 +51,7 @@ export default function ConnectionsPage() {
       await removeConnection.mutateAsync(connectionId);
       toast.success('Disconnected successfully');
     } catch (error) {
+      console.error('Failed to disconnect:', error);
       toast.error('Failed to disconnect');
     }
   };
@@ -89,7 +90,7 @@ export default function ConnectionsPage() {
       ].map((tab) => (
         <button
           key={tab.id}
-          onClick={() => setActiveTab(tab.id as any)}
+          onClick={() => setActiveTab(tab.id as 'my_connections' | 'requests' | 'sent_requests')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
             activeTab === tab.id
               ? 'bg-primary/10 text-primary border border-primary/20'

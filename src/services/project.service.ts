@@ -23,7 +23,7 @@ export const projectService = {
     query: ProjectQuery = {}
   ): Promise<PaginatedResponse<Project>> => {
     const response = await apiClient.get<
-      ApiResponse<{ projects: Project[]; pagination: any }>
+      ApiResponse<{ projects: Project[]; pagination: PaginatedResponse<Project>['pagination'] }>
     >('/projects', { params: query });
     
     return {

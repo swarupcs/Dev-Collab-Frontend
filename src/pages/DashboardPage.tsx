@@ -7,6 +7,7 @@ import { useActivities } from '@/hooks/useActivity';
 import { toast } from 'sonner';
 import { Activity, Search, Bell, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { ProjectInvitation } from '@/types/api';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -92,7 +93,7 @@ export default function DashboardPage() {
                 Pending Invitations
               </h2>
               <div className="space-y-3">
-                {invitations.map((inv: any) => (
+                {invitations.map((inv: ProjectInvitation) => (
                   <div
                     key={inv.id}
                     className="card-modern p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
@@ -114,7 +115,7 @@ export default function DashboardPage() {
                         size="sm"
                         onClick={() =>
                           handleRespondInvitation(
-                            inv.project.id || inv.project,
+                            inv.project.id,
                             inv.id,
                             false
                           )
@@ -126,7 +127,7 @@ export default function DashboardPage() {
                         size="sm"
                         onClick={() =>
                           handleRespondInvitation(
-                            inv.project.id || inv.project,
+                            inv.project.id,
                             inv.id,
                             true
                           )

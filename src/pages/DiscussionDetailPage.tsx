@@ -4,7 +4,7 @@ import { useDiscussionPost, useComments, useCreateComment, useToggleLike, useTog
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 import { MessageSquare, Heart, Bookmark, Share2, ArrowLeft, Send, CornerDownRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 const renderMarkdown = (text: string) => {
@@ -18,7 +18,6 @@ const renderMarkdown = (text: string) => {
 export default function DiscussionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   const { data: post, isLoading: postLoading } = useDiscussionPost(id || '', !!id);
@@ -39,7 +38,7 @@ export default function DiscussionDetailPage() {
     try {
       await createCommentMutation.mutateAsync({
         postId: id!,
-        data: { content: commentText.trim(), parentComment: replyTo }
+        data: { content: commentText.trim(), parentComment: replyTo ?? undefined }
       });
       setCommentText('');
       setReplyTo(null);
@@ -232,7 +231,11 @@ export default function DiscussionDetailPage() {
                       size="sm"
                       onClick={() => {
                         setReplyTo(comment.id);
-                        window.scrollTo({ top: document.querySelector('textarea')?.offsetTop! - 100, behavior: 'smooth' });
+                        const textarea = document.querySelector('textarea');
+                        if (textarea) {
+                          const top = textarea.offsetTop - 100;
+                          window.scrollTo({ top, behavior: 'smooth' });
+                        }
                       }}
                       className="text-xs text-muted-foreground hover:text-primary font-medium"
                     >

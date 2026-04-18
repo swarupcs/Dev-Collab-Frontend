@@ -40,7 +40,8 @@ export default function SignUpPage() {
         lastName: formData.lastName,
       });
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as { response?: { status?: number } };
       if (error?.response?.status === 409) {
         setErrorMsg('Email address is already in use');
       } else {

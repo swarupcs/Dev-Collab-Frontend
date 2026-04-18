@@ -1,5 +1,5 @@
 import apiClient from '@/api/client';
-import type { User, ApiResponse } from '@/types/api';
+import type { User, ApiResponse, PaginatedResponse } from '@/types/api';
 
 export interface UpdateProfileData {
   firstName?: string;
@@ -37,9 +37,9 @@ export const userService = {
   // Search users
   searchUsers: async (
     params: SearchUsersParams
-  ): Promise<{ data: User[]; pagination: any }> => {
+  ): Promise<PaginatedResponse<User>> => {
     const response = await apiClient.get<
-      ApiResponse<{ data: User[]; pagination: any }>
+      ApiResponse<PaginatedResponse<User>>
     >('/users/search', { params });
 
     return {

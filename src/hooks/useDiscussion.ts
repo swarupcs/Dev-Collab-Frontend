@@ -1,20 +1,22 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { discussionService } from '@/services/discussion.service';
+import type { GetPostsParams, Post, CreatePostData, CreateCommentData } from '@/services/discussion.service';
+import type { ApiResponse } from '@/types/api';
 
 export const discussionKeys = {
   all: ['discussions'] as const,
-  posts: (params?: any) => [...discussionKeys.all, 'posts', params] as const,
+  posts: (params?: GetPostsParams) => [...discussionKeys.all, 'posts', params] as const,
   post: (id: string) => [...discussionKeys.all, 'post', id] as const,
   comments: (postId: string) => [...discussionKeys.all, 'comments', postId] as const,
 };
 
-export const useDiscussionPosts = (params?: any) => {
+export const useDiscussionPosts = (params?: GetPostsParams) => {
   return useInfiniteQuery({
     queryKey: discussionKeys.posts(params),
-    queryFn: ({ pageParam = 1 }) => discussionService.getPosts({ ...params, pageParam }),
+    queryFn: ({ pageParam = 1 }) => discussionService.getPosts({ ...params, pageParam: pageParam as number }),
     initialPageParam: 1,
-    getNextPageParam: (lastPage: any, allPages: any[]) => {
-      return lastPage.data.length ? allPages.length + 1 : undefined;
+    getNextPageParam: (lastPage: ApiResponse<Post[]>, allPages: ApiResponse<Post[]>[]) => {
+      return lastPage.data && lastPage.data.length ? allPages.length + 1 : undefined;
     },
   });
 };
@@ -31,7 +33,7 @@ export const useDiscussionPost = (id: string, enabled = true) => {
 export const useCreatePost = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: discussionService.createPost,
+    mutationFn: (data: CreatePostData) => discussionService.createPost(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: discussionKeys.all });
     },
@@ -72,7 +74,7 @@ export const useComments = (postId: string, enabled = true) => {
 export const useCreateComment = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ postId, data }: { postId: string; data: any }) => 
+    mutationFn: ({ postId, data }: { postId: string; data: CreateCommentData }) =>
       discussionService.createComment(postId, data),
     onSuccess: (_, { postId }) => {
       queryClient.invalidateQueries({ queryKey: discussionKeys.comments(postId) });

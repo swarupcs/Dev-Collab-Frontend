@@ -1,12 +1,20 @@
 import apiClient from '@/api/client';
 import type { ApiResponse } from '@/types/api';
 
+export interface PostAuthor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string;
+  headline?: string;
+}
+
 export interface Post {
   id: string;
   title: string;
   content: string;
   category: string;
-  author: any;
+  author: PostAuthor;
   likesCount: number;
   commentsCount: number;
   bookmarksCount: number;
@@ -18,7 +26,7 @@ export interface Post {
 export interface Comment {
   id: string;
   content: string;
-  author: any;
+  author: PostAuthor;
   post: string;
   parentComment?: string;
   likesCount: number;
@@ -26,10 +34,28 @@ export interface Comment {
   createdAt: string;
 }
 
+export interface CreatePostData {
+  title: string;
+  content: string;
+  category: string;
+}
+
+export interface CreateCommentData {
+  content: string;
+  parentComment?: string;
+}
+
+export interface GetPostsParams {
+  category?: string;
+  sort?: 'recent' | 'popular';
+  limit?: number;
+  [key: string]: unknown;
+}
+
 export const discussionService = {
-  getPosts: async ({ pageParam = 1, ...params }): Promise<any> => {
-    const response = await apiClient.get<ApiResponse<Post[]>>('/discussion', { 
-      params: { ...params, page: pageParam }
+  getPosts: async ({ pageParam = 1, ...params }: GetPostsParams & { pageParam?: number }): Promise<ApiResponse<Post[]>> => {
+    const response = await apiClient.get<ApiResponse<Post[]>>('/discussion', {
+      params: { ...params, page: pageParam },
     });
     return response.data;
   },
@@ -39,7 +65,7 @@ export const discussionService = {
     return response.data.data!;
   },
 
-  createPost: async (data: any): Promise<Post> => {
+  createPost: async (data: CreatePostData): Promise<Post> => {
     const response = await apiClient.post<ApiResponse<Post>>('/discussion', data);
     return response.data.data!;
   },
@@ -59,7 +85,7 @@ export const discussionService = {
     return response.data.data!;
   },
 
-  createComment: async (postId: string, data: any): Promise<Comment> => {
+  createComment: async (postId: string, data: CreateCommentData): Promise<Comment> => {
     const response = await apiClient.post<ApiResponse<Comment>>(`/discussion/${postId}/comments`, data);
     return response.data.data!;
   },

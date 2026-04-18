@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import {  Link } from 'react-router-dom';
 import { useDiscussionPosts, useCreatePost, useToggleLike, useToggleBookmark } from '@/hooks/useDiscussion';
 import { toast } from 'sonner';
 import { useAppSelector } from '@/store/hooks';
 import { MessageSquare, Heart, Bookmark, Share2, Plus, Search, SortAsc, Hash, Sparkles, Clock, MessagesSquare, ArrowRight, Lightbulb } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import type { Post } from '@/services/discussion.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent,   DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,18 +35,17 @@ const containerVariants = {
   }
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
 export default function DiscussionPage() {
-  const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'top'>('recent');
+  const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const [showCompose, setShowCompose] = useState(false);
   const [newPost, setNewPost] = useState({ title: '', content: '', category: 'Tech' });
 
@@ -71,7 +71,7 @@ export default function DiscussionPage() {
     });
   };
 
-  const allPosts = posts?.pages.flatMap(page => page.data) || [];
+  const allPosts = (posts?.pages.flatMap(page => page.data) || []).filter((post): post is Post => !!post);
 
   return (
     <div className="container mx-auto max-w-[1200px] py-8 px-4 sm:px-6 min-h-screen">
@@ -171,7 +171,7 @@ export default function DiscussionPage() {
             </div>
             <div className="w-full sm:w-[1px] h-[1px] sm:h-8 bg-border/50 self-center hidden sm:block" />
             <div className="flex items-center px-2">
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'popular')}>
                 <SelectTrigger className="w-full sm:w-[160px] h-11 bg-transparent border-none shadow-none text-sm focus:ring-0 font-medium">
                   <div className="flex items-center text-muted-foreground">
                     <SortAsc className="h-4 w-4 mr-2" />
@@ -181,7 +181,7 @@ export default function DiscussionPage() {
                 </SelectTrigger>
                 <SelectContent align="end" className="rounded-xl shadow-lg border-border/50">
                   <SelectItem value="recent" className="rounded-lg cursor-pointer">Most Recent</SelectItem>
-                  <SelectItem value="top" className="rounded-lg cursor-pointer">Most Popular</SelectItem>
+                  <SelectItem value="popular" className="rounded-lg cursor-pointer">Most Popular</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -215,7 +215,7 @@ export default function DiscussionPage() {
               </motion.div>
             ) : (
               <AnimatePresence mode="popLayout">
-                {allPosts.map((post: any) => (
+                {allPosts.map((post) => (
                   <motion.div 
                     variants={itemVariants}
                     layout
@@ -228,7 +228,7 @@ export default function DiscussionPage() {
                     <div className="flex flex-col sm:flex-row items-start gap-5">
                       <Link to={`/profile/${post.author.id}`} className="shrink-0 hidden sm:block">
                         <Avatar className="h-12 w-12 border-2 border-background shadow-sm ring-1 ring-border/50 group-hover:ring-primary/30 transition-all">
-                          <AvatarImage src={post.author.avatarUrl} alt={post.author.username} />
+                          <AvatarImage src={post.author.avatarUrl} alt={`${post.author.firstName} ${post.author.lastName}`} />
                           <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary font-bold">
                             {post.author.firstName?.[0]}{post.author.lastName?.[0]}
                           </AvatarFallback>
@@ -248,7 +248,6 @@ export default function DiscussionPage() {
                             <Link to={`/profile/${post.author.id}`} className="font-semibold text-foreground hover:text-primary transition-colors">
                               {post.author.firstName} {post.author.lastName}
                             </Link>
-                            <span className="text-muted-foreground text-xs font-medium bg-muted px-2 py-0.5 rounded-md">@{post.author.username}</span>
                             <span className="text-muted-foreground text-xs">•</span>
                             <span className="text-muted-foreground text-xs flex items-center gap-1">
                               <Clock className="h-3 w-3" />

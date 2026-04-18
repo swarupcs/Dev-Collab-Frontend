@@ -6,9 +6,9 @@ export interface ActivityItem {
   user: string;
   type: 'CONNECTION_REQUEST' | 'CONNECTION_ACCEPTED' | 'PROJECT_INVITE' | 'PROJECT_APPLICATION' | 'DISCUSSION_REPLY' | 'DISCUSSION_LIKE';
   content: string;
-  relatedUser?: any;
-  relatedProject?: any;
-  relatedDiscussion?: any;
+  relatedUser?: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+  relatedProject?: { id: string; title: string };
+  relatedDiscussion?: { id: string; title: string };
   read: boolean;
   createdAt: string;
 }

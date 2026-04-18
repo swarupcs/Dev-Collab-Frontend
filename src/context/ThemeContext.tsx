@@ -1,21 +1,10 @@
 // ============================================================
-// Theme Context — Dark / light mode with localStorage persistence
+// Theme Provider — only exports a React component (Fast Refresh safe)
+// Context object lives in themeContext.ts
 // ============================================================
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from 'react';
-
-interface ThemeState {
-  theme: 'light' | 'dark';
-  toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeState | null>(null);
+import { useState, useEffect, type ReactNode } from 'react';
+import { ThemeContext } from './themeContext';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -38,10 +27,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </ThemeContext.Provider>
   );
-}
-
-export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
-  return ctx;
 }

@@ -6,14 +6,14 @@ import { useSearchUsers, useTrendingSkills } from '@/hooks/useUser';
 import { useProjects, useApplyToProject } from '@/hooks/useProjects';
 import { useSendConnectionRequest, useConnections, usePendingRequests, useRemoveConnection } from '@/hooks/useConnections';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   Search, Users, Briefcase, Globe, Send, Compass, Sparkles, Code2, MapPin, UserPlus, ArrowRight, Activity
 } from 'lucide-react';
-import type { Project } from '@/types/api';
+import type { Project, Connection } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonCard } from '@/components/SkeletonCard';
@@ -26,7 +26,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -90,13 +90,13 @@ export default function ExplorePage() {
   };
 
   const getConnectionStatus = (userId: string) => {
-    const connection = connections?.find((c: any) => c.sender.id === userId || c.receiver.id === userId);
+    const connection = connections?.find((c: Connection) => c.sender.id === userId || c.receiver.id === userId);
     if (connection) return { status: 'CONNECTED', id: connection.id };
 
-    const sentReq = pendingRequests?.find((req: any) => req.receiver.id === userId && req.sender.id === user?.id);
+    const sentReq = pendingRequests?.find((req: Connection) => req.receiver.id === userId && req.sender.id === user?.id);
     if (sentReq) return { status: 'SENT', id: sentReq.id };
 
-    const receivedReq = pendingRequests?.find((req: any) => req.sender.id === userId && req.receiver.id === user?.id);
+    const receivedReq = pendingRequests?.find((req: Connection) => req.sender.id === userId && req.receiver.id === user?.id);
     if (receivedReq) return { status: 'RECEIVED', id: receivedReq.id };
 
     return { status: 'NONE' };
@@ -426,7 +426,7 @@ export default function ExplorePage() {
                         
                         <div className="flex items-center justify-between pt-4 border-t border-border/40">
                           <div className="flex items-center -space-x-2">
-                            {project.members.slice(0, 3).map((m, i) => (
+                            {project.members.slice(0, 3).map((_, i) => (
                               <Avatar key={i} className="h-8 w-8 border-2 border-card ring-1 ring-border/50">
                                 <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
                                   M{i+1}

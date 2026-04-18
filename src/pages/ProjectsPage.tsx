@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects, useCreateProject } from '@/hooks/useProjects';
+import type { ProjectQuery } from '@/services/project.service';
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
@@ -12,10 +13,10 @@ export default function ProjectsPage() {
   });
   const [page, setPage] = useState(1);
 
-  const query: any = { page };
+  const query: ProjectQuery = { page };
   if (filters.search) query.search = filters.search;
-  if (filters.status) query.status = filters.status;
-  if (filters.ownership) query.ownership = filters.ownership;
+  if (filters.status) query.status = filters.status as ProjectQuery['status'];
+  if (filters.ownership) query.ownership = filters.ownership as ProjectQuery['ownership'];
 
   const { data: projectsData, isLoading } = useProjects(query);
   const createProject = useCreateProject();

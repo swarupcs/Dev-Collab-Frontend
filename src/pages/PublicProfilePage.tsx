@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Mail, MapPin, Globe, Calendar, Briefcase, MessageSquare, Heart } from 'lucide-react';
 import { AppGithubIcon, AppXTwitterIcon } from '@/components/Icons';
+import type { Project } from '@/types/api';
+import type { Post } from '@/services/discussion.service';
 
 export default function PublicProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -19,11 +21,11 @@ export default function PublicProfilePage() {
 
   // Fetch all projects and filter by user
   const { data: projectsData, isLoading: projectsLoading } = useProjects({});
-  const userProjects = (projectsData?.data || []).filter((p: any) => p.owner?.id === id);
+  const userProjects = (projectsData?.data || []).filter((p: Project) => p.owner?.id === id);
 
   // Fetch discussions by this user
   const { data: discussionsData, isLoading: discussionsLoading } = useDiscussionPosts({ authorId: id });
-  const discussions = discussionsData?.pages?.flatMap((page: any) => page.data) || [];
+  const discussions = discussionsData?.pages?.flatMap((page) => page.data || []) || [];
 
   const isOwnProfile = currentUser?.id === id;
 
@@ -211,7 +213,7 @@ export default function PublicProfilePage() {
                   <p className="text-sm text-muted-foreground">No public discussions started yet.</p>
                 </div>
               ) : (
-                discussions.slice(0, 3).map((post: any) => (
+                discussions.slice(0, 3).map((post: Post) => (
                   <Link key={post.id} to={`/discussion/${post.id}`} className="block card-modern p-5 hover:border-accent/30 transition-colors group">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-accent">{post.category}</span>

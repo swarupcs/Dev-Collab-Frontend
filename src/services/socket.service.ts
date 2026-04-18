@@ -31,7 +31,7 @@ export const getSocket = (token?: string) => {
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
-    // @ts-ignore
+    // @ts-expect-error: Resetting singleton instance
     socket = undefined;
   }
 };
