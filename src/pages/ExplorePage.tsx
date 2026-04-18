@@ -26,7 +26,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -244,7 +244,7 @@ export default function ExplorePage() {
                     >
                       <div className="flex items-start gap-4 mb-4">
                         <Avatar className="h-14 w-14 border-2 border-background shadow-sm ring-1 ring-border/50 group-hover:ring-primary/30 transition-all">
-                          <AvatarImage src={dev.avatarUrl} alt={dev.firstName} className="object-cover" />
+                          <AvatarImage src={dev.avatarUrl || ''} alt={dev.firstName} className="object-cover" />
                           <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary font-bold text-lg">
                             {dev.firstName[0]}{dev.lastName[0]}
                           </AvatarFallback>

@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
 import type { RootState } from '@/store';
 import { useLogout } from '@/hooks/useAuth';
-import { useState, ElementType } from 'react';
+import { useState, type ElementType } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,

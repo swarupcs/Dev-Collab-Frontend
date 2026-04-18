@@ -11,8 +11,9 @@ export const discussionKeys = {
 export const useDiscussionPosts = (params?: any) => {
   return useInfiniteQuery({
     queryKey: discussionKeys.posts(params),
-    queryFn: ({ pageParam }) => discussionService.getPosts({ ...params, pageParam }),
-    getNextPageParam: (lastPage, allPages) => {
+    queryFn: ({ pageParam = 1 }) => discussionService.getPosts({ ...params, pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any, allPages: any[]) => {
       return lastPage.data.length ? allPages.length + 1 : undefined;
     },
   });
