@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 let socket: Socket;
 
@@ -31,5 +31,7 @@ export const getSocket = (token?: string) => {
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
+    // @ts-ignore
+    socket = undefined;
   }
 };

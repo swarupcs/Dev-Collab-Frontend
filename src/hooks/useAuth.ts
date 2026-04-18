@@ -3,6 +3,7 @@ import { authService } from '@/services/auth.service';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials, logout as logoutAction } from '@/store/slices/authSlice';
 import type { LoginCredentials, RegisterData } from '@/types/api';
+import { disconnectSocket } from '@/services/socket.service';
 
 // Query keys
 export const authKeys = {
@@ -57,6 +58,7 @@ export const useLogout = () => {
     mutationFn: authService.logout,
     onSuccess: () => {
       dispatch(logoutAction());
+      disconnectSocket();
       queryClient.clear();
     },
   });
@@ -71,6 +73,7 @@ export const useLogoutAll = () => {
     mutationFn: authService.logoutAll,
     onSuccess: () => {
       dispatch(logoutAction());
+      disconnectSocket();
       queryClient.clear();
     },
   });

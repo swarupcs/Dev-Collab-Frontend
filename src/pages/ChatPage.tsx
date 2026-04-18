@@ -17,8 +17,10 @@ interface Message {
   createdAt: string;
 }
 
+import apiClient from '@/api/client';
+
 export default function ChatPage() {
-  const { user, token } = useAppSelector((state) => state.auth);
+  const { user, accessToken: token } = useAppSelector((state) => state.auth);
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -27,37 +29,58 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchHistoricalMessages = async (userId: string) => {
+    try {
+      const response = await apiClient.get(`/messages/${userId}`);
+      if (response.data.data) {
+        setMessages(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedConversation?.id) {
+      fetchHistoricalMessages(selectedConversation.id);
+    }
+  }, [selectedConversation?.id]);
 
   useEffect(() => {
     if (token) {
       const socket = getSocket(token);
 
-      socket.on('receiveMessage', (message: Message) => {
+      const handleReceiveMessage = (message: Message) => {
         if (selectedConversation && (message.sender.id === selectedConversation.id || message.receiver.id === selectedConversation.id)) {
-          setMessages((prev) => [...prev, message]);
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
         }
-      });
+      };
+
+      socket.on('receiveMessage', handleReceiveMessage);
 
       // Mock API call to fetch initial conversations and messages
       if (connections) {
-        const convs = connections.map(c => c.sender.id === user?.id ? c.receiver : c.sender);
+        const convs = connections.map((c) => (c.sender.id === user?.id ? c.receiver : c.sender));
         setConversations(convs);
-        
+
         const conversationIdFromUrl = searchParams.get('user');
         if (conversationIdFromUrl) {
-          const foundConv = convs.find(c => c.id === conversationIdFromUrl);
-          if(foundConv) setSelectedConversation(foundConv);
+          const foundConv = convs.find((c) => c.id === conversationIdFromUrl);
+          if (foundConv) setSelectedConversation(foundConv);
         }
       }
 
       return () => {
-        socket.off('receiveMessage');
+        socket.off('receiveMessage', handleReceiveMessage);
       };
     }
-  }, [token, connections, selectedConversation, searchParams, user?.id]);
-  
+  }, [token, connections, selectedConversation, searchParams, user?.id]);  
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -105,14 +128,14 @@ export default function ChatPage() {
             <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
           ) : filteredConversations.length > 0 ? (
             filteredConversations.map(conv => (
-              <div 
-                key={conv.id} 
+              <div
+                key={conv.id}
                 onClick={() => {
                   setSelectedConversation(conv);
                   setMessages([]); // Clear messages when changing conversation
                   setSearchParams({ user: conv.id });
-                }}
-                className={`p-4 flex items-center gap-3 cursor-pointer transition-colors border-l-4 ${selectedConversation?.id === conv.id ? 'bg-primary/10 border-primary' : 'border-transparent hover:bg-muted/50'}`}
+                  fetchHistoricalMessages(conv.id);
+                }}                className={`p-4 flex items-center gap-3 cursor-pointer transition-colors border-l-4 ${selectedConversation?.id === conv.id ? 'bg-primary/10 border-primary' : 'border-transparent hover:bg-muted/50'}`}
               >
                 <Avatar className="h-11 w-11">
                   <AvatarImage src={conv.avatarUrl} alt={conv.firstName} />
