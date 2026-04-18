@@ -42,7 +42,9 @@ const queryClient = new QueryClient({
 // Auth Initializer — fetches current user on mount if token exists
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
-  const { accessToken, user, isLoading } = useAppSelector((state: RootState) => state.auth);
+  const { accessToken, user, isLoading } = useAppSelector(
+    (state: RootState) => state.auth,
+  );
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -67,10 +69,12 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 
   if (isLoading && accessToken && !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm">Loading your workspace…</p>
+      <div className='min-h-screen flex items-center justify-center bg-background'>
+        <div className='text-center'>
+          <div className='h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin mx-auto mb-4' />
+          <p className='text-muted-foreground text-sm'>
+            Loading your workspace…
+          </p>
         </div>
       </div>
     );
@@ -81,10 +85,12 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 
 // Protected Route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAppSelector((state: RootState) => state.auth.isAuthenticated);
+  const isAuthenticated = useAppSelector(
+    (state: RootState) => state.auth.isAuthenticated,
+  );
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to='/signin' replace />;
   }
 
   return <AppLayout>{children}</AppLayout>;
@@ -92,10 +98,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 // Public Route component (redirect to dashboard if authenticated)
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAppSelector((state: RootState) => state.auth.isAuthenticated);
+  const isAuthenticated = useAppSelector(
+    (state: RootState) => state.auth.isAuthenticated,
+  );
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to='/dashboard' replace />;
   }
 
   return <>{children}</>;
@@ -107,10 +115,10 @@ function AppRoutes() {
       <AuthInitializer>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<HomePage />} />
-          
+          <Route path='/' element={<HomePage />} />
+
           <Route
-            path="/signin"
+            path='/signin'
             element={
               <PublicRoute>
                 <SignInPage />
@@ -118,7 +126,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/signup"
+            path='/signup'
             element={
               <PublicRoute>
                 <SignUpPage />
@@ -128,7 +136,7 @@ function AppRoutes() {
 
           {/* Protected routes */}
           <Route
-            path="/dashboard"
+            path='/dashboard'
             element={
               <ProtectedRoute>
                 <DashboardPage />
@@ -136,7 +144,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/projects"
+            path='/projects'
             element={
               <ProtectedRoute>
                 <ProjectsPage />
@@ -144,7 +152,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/projects/:id"
+            path='/projects/:id'
             element={
               <ProtectedRoute>
                 <ProjectDetailPage />
@@ -152,7 +160,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/profile"
+            path='/profile'
             element={
               <ProtectedRoute>
                 <ProfilePage />
@@ -160,7 +168,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/profile/:id"
+            path='/profile/:id'
             element={
               <ProtectedRoute>
                 <PublicProfilePage />
@@ -168,7 +176,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/connections"
+            path='/connections'
             element={
               <ProtectedRoute>
                 <ConnectionsPage />
@@ -176,7 +184,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/explore"
+            path='/explore'
             element={
               <ProtectedRoute>
                 <ExplorePage />
@@ -184,7 +192,7 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/settings"
+            path='/settings'
             element={
               <ProtectedRoute>
                 <SettingsPage />
@@ -192,31 +200,31 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/chat"
+            path='/chat'
             element={
               <ProtectedRoute>
                 <ChatPage />
               </ProtectedRoute>
             }
           />
-          <Route 
-            path="/discussion" 
+          <Route
+            path='/discussion'
             element={
               <ProtectedRoute>
                 <DiscussionPage />
               </ProtectedRoute>
             }
           />
-          <Route 
-            path="/discussion/:id" 
+          <Route
+            path='/discussion/:id'
             element={
               <ProtectedRoute>
                 <DiscussionDetailPage />
               </ProtectedRoute>
             }
           />
-          <Route 
-            path="/activity" 
+          <Route
+            path='/activity'
             element={
               <ProtectedRoute>
                 <ActivityPage />
@@ -225,7 +233,7 @@ function AppRoutes() {
           />
 
           {/* Catch-all 404 */}
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path='*' element={<NotFoundPage />} />
         </Routes>
       </AuthInitializer>
     </BrowserRouter>
@@ -238,9 +246,9 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AppRoutes />
         <Toaster
-          position="top-right"
+          position='top-right'
           richColors
-          theme="dark"
+          theme='dark'
           toastOptions={{
             style: {
               background: 'hsl(220 25% 9%)',

@@ -20,18 +20,18 @@ export function Navigation() {
 
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
-    navigate('/login');
+    navigate('/signin');
   };
 
   return (
-    <nav className="bg-white border-b shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <Link to="/dashboard" className="text-xl font-bold text-indigo-600">
+    <nav className='bg-white border-b shadow-sm'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        <div className='flex items-center justify-between h-16'>
+          <div className='flex items-center gap-8'>
+            <Link to='/dashboard' className='text-xl font-bold text-indigo-600'>
               Dev-Collab
             </Link>
-            <div className="hidden md:flex gap-6">
+            <div className='hidden md:flex gap-6'>
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -47,16 +47,16 @@ export function Navigation() {
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className='flex items-center gap-4'>
             {user && (
-              <span className="text-sm text-gray-700">
+              <span className='text-sm text-gray-700'>
                 {user.firstName} {user.lastName}
               </span>
             )}
             <button
               onClick={handleLogout}
               disabled={logoutMutation.isPending}
-              className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              className='px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50'
             >
               Logout
             </button>

@@ -15,31 +15,36 @@ export function DashboardHeader({ title, backTo }: DashboardHeaderProps) {
 
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
-    navigate('/login');
+    navigate('/signin');
   };
 
   return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <header className='bg-white shadow-sm border-b'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-4'>
             {backTo && (
-              <Link to={backTo.href} className="text-indigo-600 hover:text-indigo-700 text-sm">
+              <Link
+                to={backTo.href}
+                className='text-indigo-600 hover:text-indigo-700 text-sm'
+              >
                 ← {backTo.label}
               </Link>
             )}
-            {title && <h1 className="text-xl font-bold text-gray-900">{title}</h1>}
+            {title && (
+              <h1 className='text-xl font-bold text-gray-900'>{title}</h1>
+            )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className='flex items-center gap-4'>
             {user && (
-              <span className="text-sm text-gray-700">
+              <span className='text-sm text-gray-700'>
                 {user.firstName} {user.lastName}
               </span>
             )}
             <button
               onClick={handleLogout}
               disabled={logoutMutation.isPending}
-              className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              className='px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50'
             >
               Logout
             </button>
