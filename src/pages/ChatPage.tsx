@@ -25,6 +25,7 @@ export default function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [conversations, setConversations] = useState<any[]>([]);
+  const [lastMessages, setLastMessages] = useState<Record<string, Message>>({});
   const [selectedConversation, setSelectedConversation] = useState<any | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -43,6 +44,27 @@ export default function ChatPage() {
     }
   };
 
+  const fetchConversationsWithLastMessage = async () => {
+    try {
+      const response = await apiClient.get(`/messages/conversations`);
+      if (response.data.data) {
+        const map: Record<string, Message> = {};
+        response.data.data.forEach((c: any) => {
+          map[c.user.id] = c.lastMessage;
+        });
+        setLastMessages(map);
+      }
+    } catch (error) {
+      console.error('Failed to fetch conversations:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchConversationsWithLastMessage();
+    }
+  }, [token]);
+
   useEffect(() => {
     if (selectedConversation?.id) {
       fetchHistoricalMessages(selectedConversation.id);
@@ -54,6 +76,9 @@ export default function ChatPage() {
       const socket = getSocket(token);
 
       const handleReceiveMessage = (message: Message) => {
+        const otherUserId = message.sender.id === user?.id ? message.receiver.id : message.sender.id;
+        setLastMessages((prev) => ({ ...prev, [otherUserId]: message }));
+
         if (selectedConversation && (message.sender.id === selectedConversation.id || message.receiver.id === selectedConversation.id)) {
           setMessages((prev) => {
             if (prev.some((m) => m.id === message.id)) return prev;
@@ -63,7 +88,6 @@ export default function ChatPage() {
       };
 
       socket.on('receiveMessage', handleReceiveMessage);
-
       // Mock API call to fetch initial conversations and messages
       if (connections) {
         const convs = connections.map((c) => (c.sender.id === user?.id ? c.receiver : c.sender));
@@ -94,15 +118,15 @@ export default function ChatPage() {
       content: newMessage,
       receiverId: selectedConversation.id,
     };
-    
+
     socket.emit('sendMessage', message, (ack: any) => {
       if (!ack.error) {
         setMessages(prev => [...prev, ack.message]);
+        setLastMessages(prev => ({ ...prev, [selectedConversation.id]: ack.message }));
         setNewMessage('');
       }
     });
-  };
-  
+  };  
   const filteredConversations = conversations.filter(c => 
     `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -143,9 +167,12 @@ export default function ChatPage() {
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-foreground truncate">{conv.firstName} {conv.lastName}</p>
-                  <p className="text-sm text-muted-foreground truncate">Last message preview...</p>
-                </div>
-              </div>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {lastMessages[conv.id] 
+                      ? `${lastMessages[conv.id].sender.id === user?.id ? 'You: ' : ''}${lastMessages[conv.id].content}`
+                      : 'Start a conversation'}
+                  </p>
+                </div>              </div>
             ))
           ) : (
             <div className="p-8 text-center text-sm text-muted-foreground">No contacts found.</div>
